@@ -106,21 +106,28 @@
             overflow-y: auto;
         }
 
-        /* Loading Overlay */
+        /* Loading Overlay - Unobtrusive */
         #loading-overlay {
             position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(255,255,255,0.8);
-            display: flex;
+            bottom: 30px;
+            right: 30px;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            border-radius: 30px;
+            padding: 10px 25px;
+            display: none; 
             align-items: center;
             justify-content: center;
             z-index: 9999;
-            flex-direction: column;
+            gap: 12px;
+            transition: all 0.3s ease;
         }
-        .spinner-border {
-            width: 3rem;
-            height: 3rem;
+        .spinner-border-custom {
+            width: 1.2rem;
+            height: 1.2rem;
             color: #3b82f6;
+            border-width: 0.15em;
         }
 
         /* Ticker / Running Text */
@@ -144,21 +151,46 @@
             0% { transform: translate3d(0, 0, 0); }
             100% { transform: translate3d(-100%, 0, 0); }
         }
+
+        /* Custom Nav Pills untuk Menu Utama */
+        .custom-pills {
+            margin: 15px 15px 5px 15px;
+        }
+        .custom-pills .nav-link {
+            color: #64748b;
+            border-radius: 8px;
+            padding: 10px 20px;
+            transition: all 0.3s;
+            background-color: #e2e8f0;
+            margin-right: 10px;
+            border: 1px solid transparent;
+        }
+        .custom-pills .nav-link:hover {
+            background-color: #cbd5e1;
+        }
+        .custom-pills .nav-link.active {
+            background-color: #3b82f6;
+            color: white;
+            box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.5);
+            border-color: #60a5fa;
+        }
+        .cursor-pointer {
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
 
-    <!-- Loading Overlay -->
+    <!-- Loading Overlay (Floating Badge) -->
     <div id="loading-overlay">
-        <div class="spinner-border" role="status">
+        <div class="spinner-border spinner-border-custom" role="status">
             <span class="visually-hidden">Loading...</span>
         </div>
-        <div class="mt-3 font-weight-bold text-primary">Sinkronisasi Data...</div>
+        <div class="fw-bold text-primary" style="font-size: 0.9rem;" id="loading-text">Menyinkronkan Data...</div>
     </div>
 
     <!-- Header Wrapper (Sticky) -->
     <header class="sticky-top" style="z-index: 1040; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
-        <!-- Navbar & Running Text -->
         <nav class="navbar navbar-expand-lg navbar-dark pb-2" style="box-shadow: none;">
             <div class="container-fluid">
                 <a class="navbar-brand d-flex align-items-center" href="#">
@@ -170,471 +202,348 @@
                 </a>
                 <div class="d-flex flex-column align-items-end justify-content-center">
                     <div class="d-flex align-items-center gap-3">
-                        <!-- Indikator Koneksi -->
                         <div title="Status: Menunggu Koneksi..." class="d-flex align-items-center" id="connection-wrapper">
                             <span id="connection-dot" style="width: 12px; height: 12px; border-radius: 50%; background-color: #64748b; display: inline-block; transition: all 0.3s ease;"></span>
                         </div>
-
-                        <div class="form-check form-switch mb-0" title="Aktifkan Auto Refresh (10 detik)">
+                        <div class="form-check form-switch mb-0" title="Aktifkan Auto Refresh (5 detik)">
                             <input class="form-check-input" type="checkbox" id="auto-refresh-check" onchange="toggleAutoRefresh()" style="cursor: pointer; margin-top: 0.2em;">
                         </div>
                         <button class="btn btn-sm btn-outline-light" id="btn-fullscreen" onclick="toggleFullScreen()" title="Layar Penuh">
                             <i class="fas fa-expand"></i>
                         </button>
                     </div>
-                    <span class="text-light mt-1" style="font-size: 0.75rem;" id="last-update">Update: -</span>
                 </div>
             </div>
         </nav>
         <div class="ticker-wrap">
             <div class="ticker-text fw-medium" id="running-text-display">Selamat datang di Dashboard Quick Count Profesional. Data terbaru dari seluruh wilayah sedang disinkronisasikan...</div>
         </div>
+        <div class="bg-white py-1 px-3 d-flex justify-content-end align-items-center" style="border-bottom: 1px solid #e2e8f0;">
+            <span class="text-secondary fw-semibold" style="font-size: 0.75rem;">
+                <i class="fas fa-clock me-1 text-primary"></i><span id="last-update">Update: -</span>
+            </span>
+        </div>
     </header>
 
-    <!-- Nav Tabs -->
-    <ul class="nav nav-tabs" id="myTab" role="tablist">
-        <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="dpr-tab" data-bs-toggle="tab" data-bs-target="#dpr" type="button" role="tab">DPR RI</button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="dprd-tab" data-bs-toggle="tab" data-bs-target="#dprd" type="button" role="tab">DPRD Kab/Kota</button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="dapil-tab" data-bs-toggle="tab" data-bs-target="#dapil" type="button" role="tab">Sebaran Dapil</button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="config-tab" data-bs-toggle="tab" data-bs-target="#config" type="button" role="tab"><i class="fas fa-cog"></i> Konfigurasi</button>
-        </li>
-    </ul>
-
-    <!-- Tab Content -->
-    <div class="tab-content p-4" id="myTabContent">
-        
-        <!-- TAB 1: DPR RI -->
-        <div class="tab-pane fade show active" id="dpr" role="tabpanel">
-            <div class="mb-3">
-                <h4 id="display-title-dpr" class="fw-bold mb-0 text-primary">DPR RI</h4>
-                <span id="display-subtitle-dpr" class="text-muted small">Pemilihan Umum Legislatif 2026</span>
-            </div>
-            <div class="row">
-                <div class="col-md-3 col-sm-6">
-                    <div class="stat-card">
-                        <div class="stat-title">Data Masuk</div>
-                        <div class="stat-value" id="dpr-data-masuk">0%</div>
-                    </div>
-                </div>
-                <div class="col-md-3 col-sm-6">
-                    <div class="stat-card" style="border-left-color: #10b981;">
-                        <div class="stat-title">Voter Turnout (VTO)</div>
-                        <div class="stat-value" id="dpr-vto">0%</div>
-                    </div>
-                </div>
-                <div class="col-md-3 col-sm-6">
-                    <div class="stat-card" style="border-left-color: #f59e0b;">
-                        <div class="stat-title">Margin of Error</div>
-                        <div class="stat-value" id="dpr-moe">± 1.0%</div>
-                    </div>
-                </div>
-                <div class="col-md-3 col-sm-6">
-                    <div class="stat-card" style="border-left-color: #8b5cf6;">
-                        <div class="stat-title">Confidence Level</div>
-                        <div class="stat-value" id="dpr-cl">95%</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col-12">
-                    <div class="card card-custom">
-                        <div class="card-header-custom bg-light">🏆 Leaderboard Caleg DPR RI (<span id="display-top-dpr">Top 5</span>)</div>
-                        <div class="table-responsive pt-3">
-                            <table class="table table-sm" id="dpr-leaderboard-table">
-                                <thead>
-                                    <tr>
-                                        <th>Peringkat</th>
-                                        <th>Nama Caleg</th>
-                                        <th>Partai</th>
-                                        <th>Persentase Suara</th>
-                                    </tr>
-                                </thead>
-                                <tbody></tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col-lg-6">
-                    <div class="card card-custom">
-                        <div class="card-header-custom">Perolehan Suara Partai (Ambang Batas 4%)</div>
-                        <div class="table-responsive mt-3 table-scroll">
-                            <table class="table table-striped" id="dpr-partai-table">
-                                <thead>
-                                    <tr>
-                                        <th>No</th>
-                                        <th>Partai</th>
-                                        <th>Persentase</th>
-                                        <th>Estimasi (PT 4%)</th>
-                                    </tr>
-                                </thead>
-                                <tbody></tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-6">
-                    <div class="card card-custom">
-                        <div class="card-header-custom">Seluruh Caleg DPR RI</div>
-                        <div class="table-responsive pt-3 table-scroll">
-                            <table class="table table-sm table-striped" id="dpr-all-caleg-table">
-                                <thead>
-                                    <tr>
-                                        <th>Nama Caleg</th>
-                                        <th>Partai</th>
-                                        <th>Persentase Suara</th>
-                                    </tr>
-                                </thead>
-                                <tbody></tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- TAB 2: DPRD KAB/KOTA -->
-        <div class="tab-pane fade" id="dprd" role="tabpanel">
-            <div class="mb-3">
-                <h4 id="display-title-dprd" class="fw-bold mb-0 text-success">DPRD Kab/Kota</h4>
-                <span id="display-subtitle-dprd" class="text-muted small">Pemilihan Umum Legislatif 2026</span>
-            </div>
-            <div class="row">
-                <div class="col-md-3 col-sm-6">
-                    <div class="stat-card">
-                        <div class="stat-title">Data Masuk</div>
-                        <div class="stat-value" id="dprd-data-masuk">0%</div>
-                    </div>
-                </div>
-                <div class="col-md-3 col-sm-6">
-                    <div class="stat-card" style="border-left-color: #10b981;">
-                        <div class="stat-title">Voter Turnout (VTO)</div>
-                        <div class="stat-value" id="dprd-vto">0%</div>
-                    </div>
-                </div>
-                <div class="col-md-3 col-sm-6">
-                    <div class="stat-card" style="border-left-color: #f59e0b;">
-                        <div class="stat-title">Margin of Error</div>
-                        <div class="stat-value" id="dprd-moe">± 2.5%</div>
-                    </div>
-                </div>
-                <div class="col-md-3 col-sm-6">
-                    <div class="stat-card" style="border-left-color: #8b5cf6;">
-                        <div class="stat-title">Confidence Level</div>
-                        <div class="stat-value" id="dprd-cl">99%</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col-12">
-                    <div class="card card-custom">
-                        <div class="card-header-custom bg-light">🏆 Leaderboard Caleg DPRD (<span id="display-top-dprd">Top 5</span>)</div>
-                        <div class="table-responsive pt-3">
-                            <table class="table table-sm" id="dprd-leaderboard-table">
-                                <thead>
-                                    <tr>
-                                        <th>Peringkat</th>
-                                        <th>Nama Caleg</th>
-                                        <th>Dapil</th>
-                                        <th>Persentase Suara</th>
-                                    </tr>
-                                </thead>
-                                <tbody></tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col-lg-6">
-                    <div class="card card-custom">
-                        <div class="card-header-custom">
-                            Perolehan Partai & Estimasi Kursi 
-                            <span class="badge bg-primary ms-2" style="font-size: 0.75rem;">50 Kursi</span>
-                            <span class="badge bg-secondary" style="font-size: 0.75rem;">Sainte-Laguë</span>
-                        </div>
-                        <div class="table-responsive pt-3 table-scroll">
-                            <table class="table table-striped" id="dprd-partai-table">
-                                <thead>
-                                    <tr>
-                                        <th>Partai</th>
-                                        <th>Persentase</th>
-                                        <th>Estimasi Kursi</th>
-                                    </tr>
-                                </thead>
-                                <tbody></tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-6">
-                    <div class="card card-custom">
-                        <div class="card-header-custom">Seluruh Caleg DPRD</div>
-                        <div class="table-responsive pt-3 table-scroll">
-                            <table class="table table-sm table-striped" id="dprd-all-caleg-table">
-                                <thead>
-                                    <tr>
-                                        <th>Nama Caleg</th>
-                                        <th>Dapil</th>
-                                        <th>Persentase Suara</th>
-                                    </tr>
-                                </thead>
-                                <tbody></tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- TAB 3: SEBARAN DAPIL -->
-        <div class="tab-pane fade" id="dapil" role="tabpanel">
-            <!-- Tabel Sebaran Dapil DPR RI -->
-            <div class="card card-custom mb-4">
-                <div class="card-header-custom bg-light">
-                    <i class="fas fa-map-marker-alt text-primary me-2"></i> Sebaran Suara DPR RI Berdasarkan DAPIL
-                </div>
-                <div class="table-responsive pt-3 table-scroll" style="max-height: 400px;">
-                    <table class="table table-bordered text-center table-hover" id="dapil-table-dpr">
-                        <thead class="table-light sticky-top" style="z-index: 1;">
-                            <!-- Injected via JS -->
-                        </thead>
-                        <tbody>
-                            <!-- Injected via JS -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Tabel Sebaran Dapil DPRD Kab/Kota -->
-            <div class="card card-custom">
-                <div class="card-header-custom bg-light">
-                    <i class="fas fa-map-marker-alt text-success me-2"></i> Sebaran Suara DPRD Kab/Kota Berdasarkan DAPIL
-                </div>
-                <div class="table-responsive pt-3 table-scroll" style="max-height: 400px;">
-                    <table class="table table-bordered text-center table-hover" id="dapil-table-dprd">
-                        <thead class="table-light sticky-top" style="z-index: 1;">
-                            <!-- Injected via JS -->
-                        </thead>
-                        <tbody>
-                            <!-- Injected via JS -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- TAB 4: KONFIGURASI -->
-        <div class="tab-pane fade" id="config" role="tabpanel">
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="card card-custom">
-                        <div class="card-header-custom">Setting Umum</div>
-                        <div class="card-body">
-                            <form id="form-config">
-                                <div class="mb-3">
-                                    <label class="form-label">Judul Dashboard</label>
-                                    <input type="text" class="form-control" value="Quick Count Pro 2026">
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Running Text (Info Bergerak)</label>
-                                    <input type="text" class="form-control" id="config-running-text" value="Selamat datang di Dashboard Quick Count Profesional. Data terbaru dari seluruh wilayah sedang disinkronisasikan...">
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Spreadsheet ID (Data Source)</label>
-                                    <input type="text" class="form-control" value="1A2B3C4D5E6F7G8H9I" disabled>
-                                    <small class="text-muted">Dikelola di sisi server (Code.gs)</small>
-                                </div>
-                                
-                                <h6 class="mt-4 mb-3 fw-bold text-primary border-bottom pb-2">Setting Tampilan & Statistik DPR RI</h6>
-                                <div class="mb-3 row">
-                                    <div class="col">
-                                        <label class="form-label">Judul Tampilan</label>
-                                        <input type="text" class="form-control" id="config-title-dpr" value="DPR RI">
-                                    </div>
-                                    <div class="col">
-                                        <label class="form-label">Sub Judul</label>
-                                        <input type="text" class="form-control" id="config-subtitle-dpr" value="Pemilihan Umum Legislatif 2026">
-                                    </div>
-                                </div>
-                                <div class="mb-3 row">
-                                    <div class="col-md-4">
-                                        <label class="form-label">Confidence Level (%)</label>
-                                        <input type="number" class="form-control" id="config-dpr-cl" value="95">
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label">Margin of Error (%)</label>
-                                        <input type="number" class="form-control" id="config-dpr-moe" step="0.1" value="1.2">
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label">Tampil Top Caleg</label>
-                                        <input type="number" class="form-control" id="config-dpr-top" value="5" min="1">
-                                    </div>
-                                </div>
-
-                                <h6 class="mt-4 mb-3 fw-bold text-success border-bottom pb-2">Setting Tampilan & Statistik DPRD Kab/Kota</h6>
-                                <div class="mb-3 row">
-                                    <div class="col">
-                                        <label class="form-label">Judul Tampilan</label>
-                                        <input type="text" class="form-control" id="config-title-dprd" value="DPRD Kab/Kota">
-                                    </div>
-                                    <div class="col">
-                                        <label class="form-label">Sub Judul</label>
-                                        <input type="text" class="form-control" id="config-subtitle-dprd" value="Pemilihan Umum Legislatif 2026">
-                                    </div>
-                                </div>
-                                <div class="mb-4 row">
-                                    <div class="col-md-4">
-                                        <label class="form-label">Confidence Level (%)</label>
-                                        <input type="number" class="form-control" id="config-dprd-cl" value="99">
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label">Margin of Error (%)</label>
-                                        <input type="number" class="form-control" id="config-dprd-moe" step="0.1" value="2.5">
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label">Tampil Top Caleg</label>
-                                        <input type="number" class="form-control" id="config-dprd-top" value="5" min="1">
-                                    </div>
-                                </div>
-
-                                <button type="button" class="btn btn-primary" onclick="simpanPengaturan()">Simpan Pengaturan</button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="card card-custom">
-                        <div class="card-header-custom">Manajemen Data (Google Sheets)</div>
-                        <div class="card-body">
-                            <p class="text-muted small">Kelola data suara, caleg, dan hirarki wilayah (Dapil > Kecamatan > TPS) langsung melalui Google Sheets.</p>
-                            <div class="d-grid gap-2 mb-3">
-                                <button type="button" class="btn btn-outline-primary text-start" onclick="bukaSheet('Data_Suara_DPR')"><i class="fas fa-table me-2"></i> Data Suara DPR RI</button>
-                                <button type="button" class="btn btn-outline-success text-start" onclick="bukaSheet('Data_Suara_DPRD')"><i class="fas fa-table me-2"></i> Data Suara DPRD Kab/Kota</button>
-                                <button type="button" class="btn btn-outline-secondary text-start" onclick="bukaSheet('Caleg_DPR')"><i class="fas fa-users me-2"></i> Master Caleg DPR</button>
-                                <button type="button" class="btn btn-outline-secondary text-start" onclick="bukaSheet('Caleg_DPRD')"><i class="fas fa-users me-2"></i> Master Caleg DPRD</button>
-                            </div>
-                            <hr>
-                            <p class="text-muted small mb-2">Tombol di bawah ini akan memerintahkan server membuatkan lembar kerja <i>(Sheet)</i> dan header kolom secara otomatis jika belum ada.</p>
-                            <div class="d-grid">
-                                <button type="button" class="btn btn-warning text-dark fw-bold" onclick="jalankanSetupDatabase()"><i class="fas fa-database me-2"></i> Jalankan Setup Database Awal</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
+    <!-- NAVIGASI UTAMA -->
+    <div class="container-fluid mt-3 mb-2">
+        <ul class="nav nav-pills custom-pills" id="mainTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active fw-bold" id="dashboard-tab" data-bs-toggle="tab" data-bs-target="#dashboard-view" type="button" role="tab">
+                    <i class="fas fa-chart-line me-2"></i>Dashboard Hasil
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link fw-bold" id="data-tab" data-bs-toggle="tab" data-bs-target="#data-view" type="button" role="tab">
+                    <i class="fas fa-database me-2"></i>Manajemen Data
+                </button>
+            </li>
+        </ul>
     </div>
+
+    <div class="tab-content" id="mainTabContent">
+        
+        <!-- TAB 1: DASHBOARD UTAMA -->
+        <div class="tab-pane fade show active" id="dashboard-view" role="tabpanel">
+            <div class="container-fluid mb-4">
+                
+                <!-- Nav Tabs Sub-Dashboard -->
+                <ul class="nav nav-tabs" id="myTab" role="tablist">
+                    <!-- Tab Dinamis Dapil akan disuntikkan sebelum elemen di bawah ini oleh JS -->
+                    <li class="nav-item" role="presentation" id="li-dapil-tab">
+                        <button class="nav-link" id="dapil-tab" data-bs-toggle="tab" data-bs-target="#dapil" type="button" role="tab">Sebaran Suara Dapil</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="config-tab" data-bs-toggle="tab" data-bs-target="#config" type="button" role="tab"><i class="fas fa-cog"></i> Konfigurasi</button>
+                    </li>
+                </ul>
+
+                <!-- Konten Sub-Dashboard -->
+                <div class="tab-content p-4" id="myTabContent" style="background: white; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 10px 10px;">
+                    
+                    <!-- TAB 2: SEBARAN DAPIL -->
+                    <div class="tab-pane fade" id="dapil" role="tabpanel">
+                        <div class="card card-custom mb-4">
+                            <div class="card-header-custom bg-light">
+                                <i class="fas fa-map-marker-alt text-primary me-2"></i> Sebaran Suara DPR RI Berdasarkan DAPIL
+                            </div>
+                            <div class="table-responsive pt-3 table-scroll" style="max-height: 500px;">
+                                <table class="table table-bordered text-center table-hover align-middle" id="dapil-table-dpr">
+                                    <thead class="table-light sticky-top" style="z-index: 1;">
+                                        <!-- Injected via JS -->
+                                    </thead>
+                                    <tbody>
+                                        <!-- Injected via JS -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 3: KONFIGURASI -->
+                    <div class="tab-pane fade" id="config" role="tabpanel">
+                        <div class="row justify-content-center">
+                            <div class="col-lg-8">
+                                <div class="card card-custom">
+                                    <div class="card-header-custom">Setting Umum Dashboard</div>
+                                    <div class="card-body">
+                                        <form id="form-config">
+                                            <div class="mb-3">
+                                                <label class="form-label">Judul Dashboard</label>
+                                                <input type="text" class="form-control" id="config-judul-dashboard" value="Quick Count Pro 2026">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Running Text (Info Bergerak)</label>
+                                                <input type="text" class="form-control" id="config-running-text" value="Selamat datang di Dashboard Quick Count Profesional. Data terbaru dari seluruh wilayah sedang disinkronisasikan...">
+                                            </div>
+                                            <div class="mb-4">
+                                                <label class="form-label text-primary fw-bold">Link URL Web App (GAS)</label>
+                                                <input type="url" class="form-control" id="config-url-webapp" value="" placeholder="https://script.google.com/macros/s/AKfy.../exec">
+                                                <small class="text-muted">Masukkan URL Web App hasil deploy Google Apps Script Anda untuk menghubungkan database ke sistem ini.</small>
+                                            </div>
+                                            
+                                            <!-- Kontainer Dinamis Konfigurasi Dapil -->
+                                            <div id="dynamic-config-container">
+                                                <div class="text-muted fst-italic">Memuat konfigurasi Dapil dari server...</div>
+                                            </div>
+                                            
+                                            <button type="button" class="btn btn-primary w-100 fw-bold mt-4" onclick="simpanPengaturan()"><i class="fas fa-save me-2"></i>Simpan Pengaturan</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div> <!-- Tutup Tab Content Sub-Dashboard -->
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- TAB 2: MANAJEMEN DATA                      -->
+        <!-- ========================================== -->
+        <div class="tab-pane fade" id="data-view" role="tabpanel">
+            <div class="container-fluid mb-5">
+                <div class="card card-custom">
+                    <div class="card-header-custom d-flex justify-content-between align-items-center bg-light">
+                        <span><i class="fas fa-server me-2 text-primary"></i>Pusat Kendali Data Terpadu</span>
+                        <button class="btn btn-sm btn-primary fw-bold shadow-sm" onclick="syncDataManual()">
+                            <i class="fas fa-sync-alt me-1" id="icon-sync-manual"></i> Sinkron ke Database
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        
+                        <!-- Sub-Navigasi Data -->
+                        <ul class="nav nav-tabs mb-4" id="dataSubTab" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="setting-wilayah-tab" data-bs-toggle="tab" data-bs-target="#setting-wilayah" type="button" role="tab"><i class="fas fa-map-marked-alt me-2"></i>Wilayah & TPS</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="master-partai-tab" data-bs-toggle="tab" data-bs-target="#master-partai" type="button" role="tab"><i class="fas fa-flag me-2"></i>Master Partai</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="master-caleg-dpr-tab" data-bs-toggle="tab" data-bs-target="#master-caleg-dpr" type="button" role="tab"><i class="fas fa-user-tie me-2"></i>Caleg DPR RI</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="entri-data-tab" data-bs-toggle="tab" data-bs-target="#entri-data" type="button" role="tab" onclick="populateEntriForm()"><i class="fas fa-keyboard me-2"></i>Entri Data Suara</button>
+                            </li>
+                        </ul>
+
+                        <div class="tab-content" id="dataSubTabContent">
+                            
+                            <!-- MENU 1: SETTING WILAYAH -->
+                            <div class="tab-pane fade show active" id="setting-wilayah" role="tabpanel">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h6 class="mb-0 fw-bold text-primary"><i class="fas fa-map-marker-alt me-2"></i>Daftar Titik Sampel TPS - DPR RI</h6>
+                                    <div class="btn-group">
+                                        <button class="btn btn-danger btn-sm fw-bold border border-light" onclick="hapusTerpilih('tbody-wilayah', 'wilayah')"><i class="fas fa-trash-alt me-1"></i> Hapus Terpilih</button>
+                                        <button class="btn btn-primary btn-sm fw-bold" onclick="simpanDataMaster('wilayah')"><i class="fas fa-save me-1"></i> Simpan</button>
+                                        <button class="btn btn-info btn-sm text-white fw-bold" onclick="tambahBarisManual('tbody-wilayah', 'wilayah')"><i class="fas fa-plus me-1"></i> Tambah Manual</button>
+                                        <button class="btn btn-success btn-sm" onclick="exportTableToExcel('tabel-wilayah', 'Template_Wilayah_TPS')"><i class="fas fa-file-excel me-1"></i> Export Template</button>
+                                        <label class="btn btn-dark btn-sm mb-0 cursor-pointer">
+                                            <i class="fas fa-upload me-1"></i> Import Excel
+                                            <input type="file" accept=".xlsx, .xls" class="d-none" onchange="importExcelToTable(event, 'tbody-wilayah', 'wilayah')">
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="table-responsive table-scroll" style="max-height: 400px;">
+                                    <table id="tabel-wilayah" class="table table-striped table-hover text-center align-middle">
+                                        <thead class="table-dark sticky-top">
+                                            <tr>
+                                                <th class="check-col" style="width: 40px;"><input class="form-check-input" type="checkbox" onchange="toggleAll(this, 'tbody-wilayah')"></th>
+                                                <th>ID Wilayah</th>
+                                                <th>Dapil</th>
+                                                <th>Kabupaten/Kota</th>
+                                                <th>Kecamatan</th>
+                                                <th>Kelurahan/Desa</th>
+                                                <th>No. TPS</th>
+                                                <th class="aksi-col">Aksi</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tbody-wilayah">
+                                            <tr><td colspan="8" class="text-muted">Memuat data dari server database...</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="text-muted mt-3" style="font-size: 0.8rem;">* Klik Simpan untuk memperbarui data ke server. Tindakan edit dan hapus otomatis tersimpan.</div>
+                            </div>
+
+                            <!-- MENU 2: MASTER PARTAI -->
+                            <div class="tab-pane fade" id="master-partai" role="tabpanel">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h5 class="mb-0 fw-bold text-dark">Daftar Nama Partai & Logo</h5>
+                                    <div class="btn-group">
+                                        <button class="btn btn-danger btn-sm fw-bold border border-light" onclick="hapusTerpilih('tbody-partai', 'partai')"><i class="fas fa-trash-alt me-1"></i> Hapus Terpilih</button>
+                                        <button class="btn btn-primary btn-sm fw-bold" onclick="simpanDataMaster('partai')"><i class="fas fa-save me-1"></i> Simpan</button>
+                                        <button class="btn btn-info btn-sm text-white fw-bold" onclick="tambahBarisManual('tbody-partai', 'partai')"><i class="fas fa-plus me-1"></i> Tambah Manual</button>
+                                        <button class="btn btn-success btn-sm" onclick="exportTableToExcel('tabel-partai', 'Template_Master_Partai')"><i class="fas fa-file-excel me-1"></i> Export Excel</button>
+                                        <label class="btn btn-dark btn-sm mb-0 cursor-pointer">
+                                            <i class="fas fa-upload me-1"></i> Import Excel
+                                            <input type="file" accept=".xlsx, .xls" class="d-none" onchange="importExcelToTable(event, 'tbody-partai', 'partai')">
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="table-responsive table-scroll" style="max-height: 400px;">
+                                    <table id="tabel-partai" class="table table-striped table-hover text-center align-middle">
+                                        <thead class="table-dark sticky-top">
+                                            <tr>
+                                                <th class="check-col" style="width: 40px;"><input class="form-check-input" type="checkbox" onchange="toggleAll(this, 'tbody-partai')"></th>
+                                                <th>No Urut</th>
+                                                <th>Nama Partai</th>
+                                                <th>URL Foto Logo</th>
+                                                <th class="preview-col">Preview Logo</th>
+                                                <th class="aksi-col">Aksi</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tbody-partai">
+                                            <tr><td colspan="6" class="text-muted">Memuat data dari server database...</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- MENU 3: MASTER CALEG DPR RI -->
+                            <div class="tab-pane fade" id="master-caleg-dpr" role="tabpanel">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h5 class="mb-0 fw-bold text-dark">Daftar Caleg DPR RI</h5>
+                                    <div class="btn-group">
+                                        <button class="btn btn-danger btn-sm fw-bold border border-light" onclick="hapusTerpilih('tbody-caleg-dpr', 'caleg_dpr')"><i class="fas fa-trash-alt me-1"></i> Hapus Terpilih</button>
+                                        <button class="btn btn-primary btn-sm fw-bold" onclick="simpanDataMaster('caleg_dpr')"><i class="fas fa-save me-1"></i> Simpan</button>
+                                        <button class="btn btn-info btn-sm text-white fw-bold" onclick="tambahBarisManual('tbody-caleg-dpr', 'caleg_dpr')"><i class="fas fa-plus me-1"></i> Tambah Manual</button>
+                                        <button class="btn btn-success btn-sm" onclick="exportTableToExcel('tabel-caleg-dpr', 'Template_Caleg_DPR_RI')"><i class="fas fa-file-excel me-1"></i> Export Excel</button>
+                                        <label class="btn btn-dark btn-sm mb-0 cursor-pointer">
+                                            <i class="fas fa-upload me-1"></i> Import Excel
+                                            <input type="file" accept=".xlsx, .xls" class="d-none" onchange="importExcelToTable(event, 'tbody-caleg-dpr', 'caleg_dpr')">
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="table-responsive table-scroll" style="max-height: 400px;">
+                                    <table id="tabel-caleg-dpr" class="table table-striped table-hover text-center align-middle">
+                                        <thead class="table-dark sticky-top">
+                                            <tr>
+                                                <th class="check-col" style="width: 40px;"><input class="form-check-input" type="checkbox" onchange="toggleAll(this, 'tbody-caleg-dpr')"></th>
+                                                <th class="cursor-pointer" onclick="sortTable('tabel-caleg-dpr', 1, 'num')" title="Urutkan berdasarkan No Urut">No Urut <i class="fas fa-sort text-muted ms-1"></i></th>
+                                                <th class="cursor-pointer" onclick="sortTable('tabel-caleg-dpr', 2, 'str')" title="Urutkan berdasarkan Nama">Nama Caleg <i class="fas fa-sort text-muted ms-1"></i></th>
+                                                <th class="cursor-pointer" onclick="sortTable('tabel-caleg-dpr', 3, 'str')" title="Urutkan berdasarkan Dapil">Dapil <i class="fas fa-sort text-muted ms-1"></i></th>
+                                                <th class="cursor-pointer" onclick="sortTable('tabel-caleg-dpr', 4, 'str')" title="Urutkan berdasarkan Partai">Partai <i class="fas fa-sort text-muted ms-1"></i></th>
+                                                <th class="aksi-col">Aksi</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tbody-caleg-dpr">
+                                            <tr><td colspan="6" class="text-muted">Memuat data dari server database...</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- MENU 4: ENTRI DATA SUARA -->
+                            <div class="tab-pane fade" id="entri-data" role="tabpanel">
+                                <div class="p-3 mb-4 rounded" style="background-color: #f1f5f9; border: 1px solid #cbd5e1;">
+                                    <h6 class="text-primary fw-bold mb-3"><i class="fas fa-search-location me-2"></i>Pilih Titik Sampel TPS</h6>
+                                    <div class="row g-2">
+                                        <div class="col">
+                                            <select class="form-select form-select-sm" id="select-dapil">
+                                                <option value="">-- Pilih Dapil --</option>
+                                            </select>
+                                        </div>
+                                        <div class="col">
+                                            <select class="form-select form-select-sm" id="select-kab">
+                                                <option value="">-- Pilih Kab/Kota --</option>
+                                            </select>
+                                        </div>
+                                        <div class="col">
+                                            <select class="form-select form-select-sm" id="select-kec">
+                                                <option value="">-- Pilih Kecamatan --</option>
+                                            </select>
+                                        </div>
+                                        <div class="col">
+                                            <select class="form-select form-select-sm" id="select-kel">
+                                                <option value="">-- Pilih Kel/Desa --</option>
+                                            </select>
+                                        </div>
+                                        <div class="col">
+                                            <select class="form-select form-select-sm" id="select-tps">
+                                                <option value="">-- Pilih No TPS --</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="p-3 rounded" style="background-color: #f8fafc; border: 1px solid #e2e8f0;">
+                                    <h6 class="mb-3 fw-bold text-dark border-bottom pb-2">Form Entri Suara (Berdasarkan Partai & Caleg)</h6>
+                                    
+                                    <div id="dynamic-entri-form">
+                                        <div class="col-12 text-muted">Silakan pilih Dapil pada form di atas untuk memuat daftar Caleg.</div>
+                                    </div>
+                                    
+                                    <hr class="my-4 border-secondary">
+                                    
+                                    <div id="warning-dpt" class="alert alert-danger d-none fw-bold shadow-sm" role="alert">
+                                        <i class="fas fa-exclamation-triangle me-2"></i> PERINGATAN: Total Suara (Sah + Tidak Sah) melebihi jumlah DPT!
+                                    </div>
+                                    
+                                    <div class="row g-3 justify-content-end">
+                                        <div class="col-md-4">
+                                            <label class="form-label text-primary fw-bold"><i class="fas fa-users me-1"></i> Jumlah DPT</label>
+                                            <input type="number" class="form-control form-control-lg border-primary text-primary fw-bold" id="input-dpt" placeholder="0" min="0" style="background-color: #eff6ff;" oninput="validasiDPT()">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label text-success fw-bold"><i class="fas fa-check-circle me-1"></i> Total Suara Sah</label>
+                                            <input type="number" class="form-control form-control-lg border-success text-success fw-bold" id="input-suara-sah" placeholder="0" readonly style="background-color: #f0fdf4;">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label text-danger fw-bold"><i class="fas fa-times-circle me-1"></i> Total Suara Tidak Sah</label>
+                                            <input type="number" class="form-control form-control-lg border-danger text-danger fw-bold" id="input-suara-tidak-sah" placeholder="0" min="0" style="background-color: #fef2f2;" oninput="validasiDPT()">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mt-4 text-end">
+                                    <button class="btn btn-warning me-2" onclick="resetEntriForm()"><i class="fas fa-undo me-1"></i> Reset</button>
+                                    <button class="btn btn-primary" onclick="submitEntriData()"><i class="fas fa-save me-1"></i> Simpan Data Suara</button>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div> 
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
-    <!-- MAIN LOGIC (Client-Side & Mocking GAS) -->
+    <!-- MAIN LOGIC (Client-Side) -->
     <script>
-        // =========================================================
-        // MOCK GAS ENVIRONMENT UNTUK PREVIEW CANVAS
-        // Dalam implementasi nyata, hapus mock ini dan gunakan 
-        // google.script.run.withSuccessHandler()
-        // =========================================================
-        const MOCK_GAS = {
-            getElectionData: function() {
-                return new Promise(resolve => {
-                    setTimeout(() => {
-                        resolve({
-                            summary: {
-                                total_tps_sampel: 1000,
-                                tps_masuk: 785,
-                                total_dpt: 250000,
-                                suara_sah: 175000,
-                                suara_tidak_sah: 5000,
-                                moe_dpr: 1.2,
-                                cl_dpr: 95,
-                                moe_dprd: 2.5,
-                                cl_dprd: 99
-                            },
-                            partai_dpr: [
-                                { no: 1, nama: "Partai Alpha", suara: 45000 },
-                                { no: 2, nama: "Partai Beta", suara: 35000 },
-                                { no: 3, nama: "Partai Gamma", suara: 25000 },
-                                { no: 4, nama: "Partai Delta", suara: 15000 },
-                                { no: 5, nama: "Partai Epsilon", suara: 12000 },
-                                { no: 6, nama: "Partai Zeta", suara: 6000 }, // Dibawah 4%
-                                { no: 7, nama: "Partai Eta", suara: 3000 }  // Dibawah 4%
-                            ],
-                            caleg_dpr: [
-                                { nama: "Budi Santoso", partai: "Partai Alpha", suara: 15000 },
-                                { nama: "Siti Aminah", partai: "Partai Beta", suara: 12000 },
-                                { nama: "Ahmad Dahlan", partai: "Partai Alpha", suara: 11000 },
-                                { nama: "Ratna Sari", partai: "Partai Gamma", suara: 9500 },
-                                { nama: "Joko Anwar", partai: "Partai Delta", suara: 8000 },
-                                { nama: "M. Yamin", partai: "Partai Epsilon", suara: 7500 },
-                                { nama: "Farida Haryati", partai: "Partai Zeta", suara: 5000 },
-                                { nama: "Iwan Fals", partai: "Partai Eta", suara: 2500 }
-                            ],
-                            partai_dprd: [
-                                { no: 1, nama: "Partai Alpha", suara: 42000 },
-                                { no: 2, nama: "Partai Beta", suara: 38000 },
-                                { no: 3, nama: "Partai Gamma", suara: 20000 },
-                                { no: 4, nama: "Partai Delta", suara: 18000 }
-                            ],
-                            caleg_dprd: [
-                                { nama: "Agus Supriyanto", dapil: "Dapil 1", suara: 8000 },
-                                { nama: "Dewi Lestari", dapil: "Dapil 2", suara: 7500 },
-                                { nama: "Hendra Gunawan", dapil: "Dapil 1", suara: 6000 },
-                                { nama: "Rina Nose", dapil: "Dapil 3", suara: 5500 },
-                                { nama: "Sule", dapil: "Dapil 2", suara: 5000 },
-                                { nama: "Andre Taulany", dapil: "Dapil 1", suara: 4500 },
-                                { nama: "Parto", dapil: "Dapil 3", suara: 4000 }
-                            ],
-                            sebaran_dapil_dpr: {
-                                "Dapil Jabar I": {
-                                    "Kecamatan Sumur Bandung": { "Partai Alpha": 15000, "Partai Beta": 10000, "Partai Gamma": 5000 },
-                                    "Kecamatan Cicendo": { "Partai Alpha": 8000, "Partai Beta": 12000, "Partai Gamma": 6000 }
-                                },
-                                "Dapil Jabar II": {
-                                    "Kecamatan Margahayu": { "Partai Alpha": 12000, "Partai Beta": 18000, "Partai Gamma": 8000 },
-                                    "Kecamatan Dayeuhkolot": { "Partai Alpha": 9000, "Partai Beta": 15000, "Partai Gamma": 7000 }
-                                }
-                            },
-                            sebaran_dapil_dprd: {
-                                "Dapil Kota 1": { 
-                                    "Kecamatan A": { "Partai Alpha": 5000, "Partai Beta": 3000, "Partai Gamma": 2000 },
-                                    "Kecamatan B": { "Partai Alpha": 4000, "Partai Beta": 5000, "Partai Gamma": 1000 }
-                                },
-                                "Dapil Kota 2": { 
-                                    "Kecamatan C": { "Partai Alpha": 6000, "Partai Beta": 7000, "Partai Gamma": 3000 },
-                                    "Kecamatan D": { "Partai Alpha": 3000, "Partai Beta": 4000, "Partai Gamma": 2000 }
-                                }
-                            }
-                        });
-                    }, 800); // Simulate network delay
-                });
-            }
-        };
-
-        // =========================================================
-        // APLIKASI UTAMA
-        // =========================================================
-        
         let autoRefreshInterval = null;
+        window.masterPartaiList = []; 
+        window.masterCalegDprList = []; 
+        window.appSettings = {}; 
 
         document.addEventListener("DOMContentLoaded", () => {
             loadData();
-            
-            // Listener untuk mendeteksi perubahan fullscreen (misal tombol Esc)
             document.addEventListener('fullscreenchange', () => {
                 if (!document.fullscreenElement) {
                     document.getElementById('btn-fullscreen').innerHTML = '<i class="fas fa-expand"></i>';
@@ -642,255 +551,495 @@
             });
         });
 
-        async function loadData() {
-            showLoading(true);
+        function safeSetText(id, text) {
+            const el = document.getElementById(id);
+            if (el) el.innerText = text;
+        }
+
+        function safeSetValue(id, value) {
+            const el = document.getElementById(id);
+            if (el) el.value = value;
+        }
+
+        function safeGetValue(id, defaultVal = '') {
+            const el = document.getElementById(id);
+            return el ? el.value : defaultVal;
+        }
+
+        function getLogoHtml(partaiName) {
+            if (!window.masterPartaiList || window.masterPartaiList.length === 0) return '';
+            const p = window.masterPartaiList.find(x => x[1] && x[1].toString().trim().toLowerCase() === partaiName.toString().trim().toLowerCase());
+            if (p && p[2]) {
+                return `<img src="${p[2]}" alt="${partaiName}" style="height: 26px; width: 26px; object-fit: contain; margin-right: 8px; vertical-align: middle;" onerror="this.style.display='none'">`;
+            }
+            return '';
+        }
+
+        function syncDataManual() {
+            const icon = document.getElementById('icon-sync-manual');
+            if(icon) icon.classList.add('fa-spin');
+            
+            loadMasterData();
+            loadData();
+
+            setTimeout(() => {
+                if(icon) icon.classList.remove('fa-spin');
+            }, 1500); 
+        }
+
+        function loadData() {
+            const webAppUrl = localStorage.getItem('GAS_WEBAPP_URL') || (document.getElementById('config-url-webapp') ? document.getElementById('config-url-webapp').value : '');
+            
+            if (!webAppUrl || webAppUrl.trim() === '') {
+                console.warn("URL GAS Web App belum diatur.");
+                setConnectionStatus('error');
+                return;
+            }
+
+            showLoading(true, "Menyinkronkan Data...");
             setConnectionStatus('loading');
             
-            try {
-                // Dalam produksi: google.script.run.withSuccessHandler(processData).getElectionData();
-                const data = await MOCK_GAS.getElectionData();
-                processData(data);
-                
-                // Format Tanggal dan Waktu
-                const now = new Date();
-                const optionsDate = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-                const optionsTime = { hour: '2-digit', minute: '2-digit', second: '2-digit' };
-                const dateStr = now.toLocaleDateString('id-ID', optionsDate);
-                const timeStr = now.toLocaleTimeString('id-ID', optionsTime);
-                
-                document.getElementById('last-update').innerText = `Update: ${dateStr}, ${timeStr} WIB`;
-                setConnectionStatus('connected');
-            } catch (error) {
-                console.error("Gagal memuat data", error);
-                setConnectionStatus('error');
-                alert("Gagal memuat data. Periksa koneksi atau console.");
-            } finally {
+            fetch(webAppUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ action: 'getData' })
+            })
+            .then(res => res.json())
+            .then(response => {
                 showLoading(false);
-            }
+                if (response.status === 'success') {
+                    window.appSettings = response.data.global_summary || {};
+                    processData(response.data);
+                    setWaktuUpdate();
+                    setConnectionStatus('connected');
+                } else {
+                    console.error("Gagal menarik data:", response.message);
+                    setConnectionStatus('error');
+                }
+            })
+            .catch(error => {
+                showLoading(false);
+                console.error("Error Jaringan/CORS:", error);
+                setConnectionStatus('error');
+            });
         }
 
         function setConnectionStatus(status) {
             const dot = document.getElementById('connection-dot');
             const wrapper = document.getElementById('connection-wrapper');
+            if(!dot || !wrapper) return;
             
             if (status === 'connected') {
-                dot.style.backgroundColor = '#10b981'; // Hijau
+                dot.style.backgroundColor = '#10b981'; 
                 dot.style.boxShadow = '0 0 8px #10b981';
                 wrapper.title = 'Terhubung dengan Database';
             } else if (status === 'error') {
-                dot.style.backgroundColor = '#ef4444'; // Merah
+                dot.style.backgroundColor = '#ef4444'; 
                 dot.style.boxShadow = '0 0 8px #ef4444';
                 wrapper.title = 'Koneksi Terputus / Gagal Mengambil Data';
             } else {
-                dot.style.backgroundColor = '#f59e0b'; // Kuning/Orange (Loading)
+                dot.style.backgroundColor = '#f59e0b'; 
                 dot.style.boxShadow = '0 0 8px #f59e0b';
                 wrapper.title = 'Menyinkronkan Data...';
             }
         }
 
-        function showLoading(show) {
-            document.getElementById('loading-overlay').style.display = show ? 'flex' : 'none';
-        }
-
-        function processData(data) {
-            // Simpan data ke variabel global agar bisa difilter di Tab 3
-            window.electionData = data;
-
-            // 1. Kalkulasi Statistik Utama
-            const sumData = data.summary;
-            const dataMasuk = ((sumData.tps_masuk / sumData.total_tps_sampel) * 100).toFixed(2);
-            const totalSuara = sumData.suara_sah + sumData.suara_tidak_sah;
-            const vto = ((totalSuara / sumData.total_dpt) * 100).toFixed(2);
-
-            // Update UI DPR
-            document.getElementById('dpr-data-masuk').innerText = `${dataMasuk}%`;
-            document.getElementById('dpr-vto').innerText = `${vto}%`;
-            document.getElementById('dpr-moe').innerText = `± ${sumData.moe_dpr}%`;
-            document.getElementById('dpr-cl').innerText = `${sumData.cl_dpr}%`;
-
-            // Update UI DPRD
-            document.getElementById('dprd-data-masuk').innerText = `${dataMasuk}%`;
-            document.getElementById('dprd-vto').innerText = `${vto}%`;
-            document.getElementById('dprd-moe').innerText = `± ${sumData.moe_dprd}%`;
-            document.getElementById('dprd-cl').innerText = `${sumData.cl_dprd}%`;
-
-            // Update Konfigurasi Input Values
-            document.getElementById('config-dpr-cl').value = sumData.cl_dpr;
-            document.getElementById('config-dpr-moe').value = sumData.moe_dpr;
-            document.getElementById('config-dprd-cl').value = sumData.cl_dprd;
-            document.getElementById('config-dprd-moe').value = sumData.moe_dprd;
-
-            updateTitlesUI();
-
-            // 2. Kalkulasi & Render DPR RI (Parliamentary Threshold 4%)
-            renderDprRi(data.partai_dpr, data.caleg_dpr, sumData.suara_sah);
-
-            // 3. Kalkulasi & Render DPRD (Sainte-Lague)
-            // Asumsi simulasi alokasi 50 kursi
-            renderDprd(data.partai_dprd, data.caleg_dprd, sumData.suara_sah, 50);
-
-            // 4. Render Sebaran Dapil (DPR RI & DPRD)
-            renderDapil(data.sebaran_dapil_dpr, 'dapil-table-dpr');
-            renderDapil(data.sebaran_dapil_dprd, 'dapil-table-dprd');
-        }
-
-        function renderDprRi(partaiData, calegData, totalSuaraSah) {
-            // Urutkan partai berdasarkan suara
-            partaiData.sort((a, b) => b.suara - a.suara);
+        function showLoading(show, text = 'Menyinkronkan Data...') {
+            const el = document.getElementById('loading-overlay');
+            const textEl = document.getElementById('loading-text');
+            if (textEl) textEl.innerText = text;
             
-            const tableBody = document.querySelector('#dpr-partai-table tbody');
-            if (tableBody) tableBody.innerHTML = '';
-
-            partaiData.forEach(p => {
-                const percentage = (p.suara / totalSuaraSah) * 100;
-                const isLolos = percentage >= 4.0;
-
-                if (tableBody) {
-                    tableBody.innerHTML += `
-                        <tr>
-                            <td>${p.no}</td>
-                            <td><strong>${p.nama}</strong></td>
-                            <td><span class="fw-bold">${percentage.toFixed(2)}%</span></td>
-                            <td>
-                                <span class="badge ${isLolos ? 'badge-lolos' : 'badge-gagal'}">
-                                    ${isLolos ? 'Lolos PT' : 'Tidak Lolos'}
-                                </span>
-                            </td>
-                        </tr>
-                    `;
+            if(el) {
+                if(show) {
+                    el.style.display = 'flex';
+                    void el.offsetWidth;
+                    el.style.opacity = '1';
+                } else {
+                    el.style.opacity = '0';
+                    setTimeout(() => { if(el.style.opacity === '0') el.style.display = 'none'; }, 300);
                 }
+            }
+        }
+
+        // =========================================================
+        // PROSES PEMBUATAN TAB DINAMIS PER DAPIL (DPR RI)
+        // =========================================================
+        function processData(data) {
+            window.electionData = data;
+            const sumDapil = data.summary_dapil;
+            const dapils = Object.keys(sumDapil).sort();
+            
+            if (dapils.length === 0) return;
+
+            const existingDynamicTabs = document.querySelectorAll('.dynamic-dapil-tab');
+            const existingDynamicPanes = document.querySelectorAll('.dynamic-dapil-pane');
+            
+            if (existingDynamicTabs.length !== dapils.length) {
+                // PERBAIKAN: Ambil state active tab sebelum direkonstruksi
+                let activeTarget = null;
+                const activeNav = document.querySelector('#myTab .nav-link.active');
+                if (activeNav) {
+                    activeTarget = activeNav.getAttribute('data-bs-target');
+                }
+
+                existingDynamicTabs.forEach(t => t.remove());
+                existingDynamicPanes.forEach(p => p.remove());
+                
+                const liDapilTab = document.getElementById('li-dapil-tab');
+                const ulMyTab = document.getElementById('myTab');
+                const myTabContent = document.getElementById('myTabContent');
+                
+                let isAnyDynamicActivated = false;
+                const isStaticTabActive = (activeTarget === '#config' || activeTarget === '#dapil');
+                
+                dapils.forEach((dapil, idx) => {
+                    const safeId = dapil.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase();
+                    const targetId = `#pane-${safeId}`;
+                    
+                    let isActive = '';
+                    let isShow = '';
+
+                    // Kembalikan state aktif tab jika sebelumnya yang sedang aktif adalah tab ini
+                    if (activeTarget === targetId) {
+                        isActive = 'active';
+                        isShow = 'show active';
+                        isAnyDynamicActivated = true;
+                    } 
+                    // Atur tab pertama aktif HANYA jika tab static (Konfigurasi/Dapil) sedang tidak aktif
+                    else if (!isStaticTabActive && !isAnyDynamicActivated && idx === 0) {
+                        isActive = 'active';
+                        isShow = 'show active';
+                        isAnyDynamicActivated = true;
+                    }
+                    
+                    const dapilTitle = window.appSettings['TITLE_' + safeId] || `DPR RI - ${dapil}`;
+                    const dapilSubtitle = window.appSettings['SUBTITLE_' + safeId] || `Pemilihan Umum Legislatif 2026`;
+                    const dapilMoe = String(window.appSettings['MOE_' + safeId] || '1.2').replace(',', '.');
+                    const dapilCl = window.appSettings['CL_' + safeId] || '95';
+                    const dapilTop = window.appSettings['TOP_' + safeId] || '5';
+                    
+                    const li = document.createElement('li');
+                    li.className = 'nav-item dynamic-dapil-tab';
+                    li.setAttribute('role', 'presentation');
+                    li.innerHTML = `<button class="nav-link ${isActive}" id="tab-${safeId}" data-bs-toggle="tab" data-bs-target="${targetId}" type="button" role="tab">${dapilTitle}</button>`;
+                    ulMyTab.insertBefore(li, liDapilTab);
+
+                    const paneDiv = document.createElement('div');
+                    paneDiv.className = `tab-pane fade ${isShow} dynamic-dapil-pane`;
+                    paneDiv.id = `pane-${safeId}`;
+                    paneDiv.setAttribute('role', 'tabpanel');
+                    paneDiv.innerHTML = `
+                        <div class="mb-3">
+                            <h4 class="fw-bold mb-0 text-primary">${dapilTitle}</h4>
+                            <span class="text-muted small">${dapilSubtitle}</span>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-3 col-sm-6">
+                                <div class="stat-card">
+                                    <div class="stat-title">Data Masuk</div>
+                                    <div class="stat-value" id="dpr-data-masuk-${safeId}">0%</div>
+                                    <div class="text-secondary mt-1 fw-semibold" style="font-size: 0.75rem;" id="dpr-data-masuk-detail-${safeId}">0 / 0 TPS</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-sm-6">
+                                <div class="stat-card" style="border-left-color: #10b981;">
+                                    <div class="stat-title">Voter Turnout (VTO)</div>
+                                    <div class="stat-value" id="dpr-vto-${safeId}">0%</div>
+                                    <div class="text-secondary mt-1 fw-semibold" style="font-size: 0.75rem;">Partisipasi Pemilih</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-sm-6">
+                                <div class="stat-card" style="border-left-color: #f59e0b;">
+                                    <div class="stat-title">Margin of Error</div>
+                                    <div class="stat-value">± ${dapilMoe}%</div>
+                                    <div class="text-secondary mt-1 fw-semibold" style="font-size: 0.75rem;">Tingkat Galat</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-sm-6">
+                                <div class="stat-card" style="border-left-color: #8b5cf6;">
+                                    <div class="stat-title">Confidence Level</div>
+                                    <div class="stat-value">${dapilCl}%</div>
+                                    <div class="text-secondary mt-1 fw-semibold" style="font-size: 0.75rem;">Tingkat Kepercayaan</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="card card-custom">
+                                    <div class="card-header-custom bg-light d-flex justify-content-between">
+                                        <span>🏆 Leaderboard Caleg (<span id="display-top-dpr-${safeId}">Top ${dapilTop}</span>)</span>
+                                    </div>
+                                    <div class="table-responsive pt-3">
+                                        <table class="table table-sm align-middle" id="dpr-leaderboard-table-${safeId}">
+                                            <thead>
+                                                <tr>
+                                                    <th class="text-center" style="width: 100px;">Peringkat</th>
+                                                    <th>Nama Caleg</th>
+                                                    <th>Partai</th>
+                                                    <th class="text-end">Perolehan Suara</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-lg-6">
+                                <div class="card card-custom">
+                                    <div class="card-header-custom">Perolehan Suara Partai</div>
+                                    <div class="table-responsive mt-3 table-scroll">
+                                        <table class="table table-striped text-center align-middle" id="dpr-partai-table-${safeId}">
+                                            <thead>
+                                                <tr>
+                                                    <th>No</th>
+                                                    <th class="text-start">Partai</th>
+                                                    <th>Persentase & Suara</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-6">
+                                <div class="card card-custom">
+                                    <div class="card-header-custom">Seluruh Caleg (${dapil})</div>
+                                    <div class="table-responsive pt-3 table-scroll">
+                                        <table class="table table-sm table-striped align-middle" id="dpr-all-caleg-table-${safeId}">
+                                            <thead>
+                                                <tr>
+                                                    <th>Nama Caleg</th>
+                                                    <th>Partai</th>
+                                                    <th class="text-end">Perolehan Suara</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    // Sisipkan elemen TEPAT sebelum div id="dapil" di dalam myTabContent
+                    myTabContent.insertBefore(paneDiv, document.getElementById('dapil'));
+                });
+            }
+
+            dapils.forEach((dapil) => {
+                const safeId = dapil.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase();
+                const sum = sumDapil[dapil];
+                const dapilTop = window.appSettings['TOP_' + safeId] || '5';
+                
+                // --- KALKULASI STATISTIK KARTU ATAS ---
+                const totalTpsSampel = parseInt(sum.total_tps_sampel) || 0;
+                const tpsMasuk = parseInt(sum.tps_masuk) || 0;
+                
+                let dataMasuk = "0.00";
+                if (totalTpsSampel > 0) {
+                    dataMasuk = ((tpsMasuk / totalTpsSampel) * 100).toFixed(2);
+                    if (parseFloat(dataMasuk) > 100) dataMasuk = "100.00";
+                }
+
+                const totalSuaraSah = parseInt(sum.suara_sah) || 0;
+                const totalSuaraTidakSah = parseInt(sum.suara_tidak_sah) || 0;
+                const totalSuara = totalSuaraSah + totalSuaraTidakSah;
+                const totalDpt = parseInt(sum.total_dpt) || 1; 
+
+                let vto = "0.00";
+                if (totalSuara > 0) {
+                    vto = ((totalSuara / totalDpt) * 100).toFixed(2);
+                    if (parseFloat(vto) > 100) vto = "100.00";
+                }
+
+                safeSetText(`dpr-data-masuk-${safeId}`, `${dataMasuk}%`);
+                safeSetText(`dpr-data-masuk-detail-${safeId}`, `${tpsMasuk} dari ${totalTpsSampel} TPS`);
+                safeSetText(`dpr-vto-${safeId}`, `${vto}%`);
+                safeSetText(`display-top-dpr-${safeId}`, `Top ${dapilTop}`);
+
+                // --- PENGHITUNGAN TOTAL PARTAI ---
+                let partaiDataArray = [];
+                if (window.masterPartaiList && window.masterPartaiList.length > 0) {
+                    window.masterPartaiList.forEach(mp => {
+                        const pNama = String(mp[1]).trim();
+                        let pSuara = 0;
+                        const sebaranKecamatan = data.sebaran_dapil_dpr[dapil] || {};
+                        for(let kec in sebaranKecamatan) {
+                            for(let p in sebaranKecamatan[kec]) {
+                                if (String(p).trim().toLowerCase() === pNama.toLowerCase()) {
+                                    pSuara += sebaranKecamatan[kec][p];
+                                }
+                            }
+                        }
+                        partaiDataArray.push({ nama: pNama, suara: pSuara });
+                    });
+                } else {
+                    let partaiDataObj = {};
+                    const sebaranKecamatan = data.sebaran_dapil_dpr[dapil] || {};
+                    for(let kec in sebaranKecamatan) {
+                        for(let p in sebaranKecamatan[kec]) {
+                            partaiDataObj[p] = (partaiDataObj[p] || 0) + sebaranKecamatan[kec][p];
+                        }
+                    }
+                    partaiDataArray = Object.keys(partaiDataObj).map(p => ({ nama: p, suara: partaiDataObj[p] }));
+                }
+                
+                // --- PENGHITUNGAN CALEG DAPIL ---
+                let calegDapilArray = [];
+                if (window.masterCalegDprList && window.masterCalegDprList.length > 0) {
+                    const validNamesForDapil = window.masterCalegDprList
+                        .filter(mc => String(mc[2]).trim().toLowerCase() === String(dapil).trim().toLowerCase());
+                    
+                    validNamesForDapil.forEach(mc => {
+                        const mcNama = String(mc[1]).trim();
+                        const mcPartai = String(mc[3]).trim();
+                        let totalSuaraCaleg = 0;
+                        if(data.caleg_dpr) {
+                            const foundCalegs = data.caleg_dpr.filter(c => String(c.nama).trim().toLowerCase() === mcNama.toLowerCase());
+                            foundCalegs.forEach(fc => totalSuaraCaleg += fc.suara);
+                        }
+                        calegDapilArray.push({ nama: mcNama, dapil: dapil, partai: mcPartai, suara: totalSuaraCaleg });
+                    });
+                } else {
+                    let rawCaleg = data.caleg_dpr.filter(c => String(c.dapil).trim().toLowerCase() === String(dapil).trim().toLowerCase());
+                    let cleanCalegMap = {};
+                    rawCaleg.forEach(c => {
+                        if(!cleanCalegMap[c.nama]) cleanCalegMap[c.nama] = { ...c };
+                        else cleanCalegMap[c.nama].suara += c.suara;
+                    });
+                    calegDapilArray = Object.values(cleanCalegMap);
+                }
+
+                // Kalkulasi suara total per partai (Suara Partai Saja + Suara Seluruh Calegnya)
+                partaiDataArray.forEach(pt => {
+                    calegDapilArray.forEach(cl => {
+                        if (String(cl.partai).trim().toLowerCase() === String(pt.nama).trim().toLowerCase()) {
+                            pt.suara += cl.suara;
+                        }
+                    });
+                });
+                
+                renderDprRiPerDapil(safeId, partaiDataArray, calegDapilArray, totalSuaraSah);
             });
 
-            // Render Leaderboard & Semua Caleg DPR RI
-            calegData.sort((a, b) => b.suara - a.suara); // Pastikan terurut
+            // Render form konfigurasi berdasarkan Dapil
+            renderConfigForm(dapils);
+            renderDapil(data.sebaran_dapil_dpr, 'dapil-table-dpr');
+        }
 
-            const leaderboardBody = document.querySelector('#dpr-leaderboard-table tbody');
-            const allCalegBody = document.querySelector('#dpr-all-caleg-table tbody');
+        // Merender form konfigurasi dinamis berdasarkan jumlah Dapil
+        function renderConfigForm(dapils) {
+            const container = document.getElementById('dynamic-config-container');
+            if (!container) return;
+            
+            let html = '';
+            dapils.forEach(dapil => {
+                const safeId = dapil.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase();
+                const title = window.appSettings['TITLE_' + safeId] || `DPR RI - ${dapil}`;
+                const subtitle = window.appSettings['SUBTITLE_' + safeId] || `Pemilihan Umum Legislatif 2026`;
+                const cl = window.appSettings['CL_' + safeId] || 95;
+                const moe = String(window.appSettings['MOE_' + safeId] || '1.2').replace(',', '.');
+                const top = window.appSettings['TOP_' + safeId] || 5;
+
+                html += `
+                <h6 class="mt-4 mb-3 fw-bold text-primary border-bottom pb-2">Setting Tampilan & Statistik: <span class="text-dark">${dapil}</span></h6>
+                <div class="mb-3 row">
+                    <div class="col-md-6">
+                        <label class="form-label">Judul Tampilan</label>
+                        <input type="text" class="form-control config-title" data-dapil="${safeId}" value="${title}">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Sub Judul</label>
+                        <input type="text" class="form-control config-subtitle" data-dapil="${safeId}" value="${subtitle}">
+                    </div>
+                </div>
+                <div class="mb-4 row">
+                    <div class="col-md-4">
+                        <label class="form-label">Confidence Level (%)</label>
+                        <input type="number" class="form-control config-cl" data-dapil="${safeId}" value="${cl}">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Margin of Error (%)</label>
+                        <input type="text" class="form-control config-moe" data-dapil="${safeId}" value="${moe}" placeholder="1.2">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Tampil Top Caleg</label>
+                        <input type="number" class="form-control config-top" data-dapil="${safeId}" value="${top}" min="1">
+                    </div>
+                </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        // Merender spesifik komponen ke dalam ID Dashboard per Dapil
+        function renderDprRiPerDapil(safeId, partaiData, calegData, totalSuaraSah) {
+            
+            // Render Partai
+            partaiData.sort((a, b) => b.suara - a.suara);
+            const tableBody = document.querySelector(`#dpr-partai-table-${safeId} tbody`);
+            if (tableBody) {
+                tableBody.innerHTML = '';
+                partaiData.forEach((p, index) => {
+                    const percentage = totalSuaraSah > 0 ? (p.suara / totalSuaraSah) * 100 : 0;
+                    const logoHtml = getLogoHtml(p.nama);
+                    tableBody.innerHTML += `
+                        <tr>
+                            <td class="align-middle">${index + 1}</td>
+                            <td class="align-middle text-start">${logoHtml}<strong>${p.nama}</strong></td>
+                            <td class="align-middle"><span class="fw-bold fs-6">${percentage.toFixed(2)}%</span><br><small class="text-muted">${p.suara.toLocaleString('id-ID')} suara</small></td>
+                        </tr>
+                    `;
+                });
+            }
+
+            // Render Caleg
+            calegData.sort((a, b) => b.suara - a.suara);
+            const leaderboardBody = document.querySelector(`#dpr-leaderboard-table-${safeId} tbody`);
+            const allCalegBody = document.querySelector(`#dpr-all-caleg-table-${safeId} tbody`);
             if (leaderboardBody) leaderboardBody.innerHTML = '';
             if (allCalegBody) allCalegBody.innerHTML = '';
 
-            const topDprLimit = parseInt(document.getElementById('config-dpr-top').value) || 5;
+            const topDprLimit = parseInt(window.appSettings['TOP_' + safeId]) || 5;
 
             calegData.forEach((c, index) => {
-                // Kalkulasi persentase suara caleg terhadap total suara sah
-                const calegPct = ((c.suara / totalSuaraSah) * 100).toFixed(2);
-                const suaraDisplay = `<span class="fw-bold fs-6">${calegPct}%</span>`;
+                const calegPct = totalSuaraSah > 0 ? ((c.suara / totalSuaraSah) * 100).toFixed(2) : "0.00";
+                const suaraDisplay = `<span class="fw-bold fs-6">${calegPct}%</span><br><small class="text-muted">${c.suara.toLocaleString('id-ID')} suara</small>`;
+                const logoHtml = getLogoHtml(c.partai);
 
-                // Populate All Caleg Table
                 if (allCalegBody) {
                     allCalegBody.innerHTML += `
                         <tr>
-                            <td>${c.nama}</td>
-                            <td>${c.partai}</td>
-                            <td class="text-end fw-bold">${suaraDisplay}</td>
+                            <td class="align-middle text-start">${c.nama}</td>
+                            <td class="align-middle text-start">${logoHtml} <span class="badge bg-light text-dark border">${c.partai}</span></td>
+                            <td class="text-end align-middle fw-bold text-primary">${suaraDisplay}</td>
                         </tr>
                     `;
                 }
 
-                // Populate Leaderboard (Based on dynamic limit)
                 if (index < topDprLimit && leaderboardBody) {
                     leaderboardBody.innerHTML += `
                         <tr>
-                            <td><span class="fw-bold fs-6">${index + 1}</span></td>
-                            <td>${c.nama}</td>
-                            <td><span class="badge bg-light text-dark border">${c.partai}</span></td>
-                            <td class="text-end fw-bold text-primary">${suaraDisplay}</td>
+                            <td class="align-middle text-center"><span class="fw-bold fs-5 text-secondary">#${index + 1}</span></td>
+                            <td class="align-middle text-start fw-bold" style="font-size:1.05rem;">${c.nama}</td>
+                            <td class="align-middle text-start">${logoHtml} <span class="badge bg-light text-dark border">${c.partai}</span></td>
+                            <td class="text-end align-middle fw-bold text-primary">${suaraDisplay}</td>
                         </tr>
                     `;
                 }
             });
         }
 
-        function renderDprd(partaiData, calegData, totalSuaraSah, totalKursi) {
-            partaiData.sort((a, b) => b.suara - a.suara);
-            
-            // Logika Sainte-Lague
-            let alokasiKursi = {};
-            let pembagi = {};
-            partaiData.forEach(p => {
-                alokasiKursi[p.nama] = 0;
-                pembagi[p.nama] = 1;
-            });
-
-            for(let i = 0; i < totalKursi; i++) {
-                let maxNilai = -1;
-                let partaiPemenang = null;
-                
-                partaiData.forEach(p => {
-                    let nilai = p.suara / pembagi[p.nama];
-                    if (nilai > maxNilai) {
-                        maxNilai = nilai;
-                        partaiPemenang = p.nama;
-                    }
-                });
-
-                if (partaiPemenang) {
-                    alokasiKursi[partaiPemenang]++;
-                    pembagi[partaiPemenang] += 2; // Ganjil: 1, 3, 5, 7, dst
-                }
-            }
-
-            const tableBody = document.querySelector('#dprd-partai-table tbody');
-            if (tableBody) tableBody.innerHTML = '';
-            
-            partaiData.forEach(p => {
-                const percentage = (p.suara / totalSuaraSah) * 100;
-                if (tableBody) {
-                    tableBody.innerHTML += `
-                        <tr>
-                            <td><strong>${p.nama}</strong></td>
-                            <td><span class="fw-bold">${percentage.toFixed(2)}%</span></td>
-                            <td><span class="text-success fw-bold">${alokasiKursi[p.nama]} Kursi</span></td>
-                        </tr>
-                    `;
-                }
-            });
-
-            // Render Leaderboard & Semua Caleg DPRD
-            calegData.sort((a, b) => b.suara - a.suara); // Pastikan terurut
-
-            const leaderboardBody = document.querySelector('#dprd-leaderboard-table tbody');
-            const allCalegBody = document.querySelector('#dprd-all-caleg-table tbody');
-            if (leaderboardBody) leaderboardBody.innerHTML = '';
-            if (allCalegBody) allCalegBody.innerHTML = '';
-
-            const topDprdLimit = parseInt(document.getElementById('config-dprd-top').value) || 5;
-
-            calegData.forEach((c, index) => {
-                // Kalkulasi persentase suara caleg terhadap total suara sah
-                const calegPct = ((c.suara / totalSuaraSah) * 100).toFixed(2);
-                const suaraDisplay = `<span class="fw-bold fs-6">${calegPct}%</span>`;
-
-                // Populate All Caleg
-                if (allCalegBody) {
-                    allCalegBody.innerHTML += `
-                        <tr>
-                            <td>${c.nama}</td>
-                            <td><span class="badge bg-secondary">${c.dapil}</span></td>
-                            <td class="text-end fw-bold">${suaraDisplay}</td>
-                        </tr>
-                    `;
-                }
-
-                // Populate Leaderboard (Based on dynamic limit)
-                if (index < topDprdLimit && leaderboardBody) {
-                    leaderboardBody.innerHTML += `
-                        <tr>
-                            <td><span class="fw-bold fs-6">${index + 1}</span></td>
-                            <td>${c.nama}</td>
-                            <td><span class="badge bg-light text-dark border">${c.dapil}</span></td>
-                            <td class="text-end fw-bold text-success">${suaraDisplay}</td>
-                        </tr>
-                    `;
-                }
-            });
-        }
-
+        // =========================================================
+        // FUNGSI LAINNYA
+        // =========================================================
         function renderDapil(sebaran, tableId) {
-            const dapils = Object.keys(sebaran);
+            const dapils = Object.keys(sebaran).sort((a, b) => a.localeCompare(b, undefined, {numeric: true, sensitivity: 'base'}));
             if (dapils.length === 0) return;
 
-            // Ambil seluruh daftar partai secara dinamis dari semua Dapil & Kecamatan
             let partaiSet = new Set();
             dapils.forEach(d => {
                 Object.keys(sebaran[d]).forEach(kec => {
@@ -901,21 +1050,20 @@
             
             const thead = document.querySelector(`#${tableId} thead`);
             const tbody = document.querySelector(`#${tableId} tbody`);
-            
             if (!thead || !tbody) return;
 
             let headerHtml = '<tr><th class="text-start" style="min-width: 200px;">Wilayah (Dapil & Kec)</th>';
-            partaiList.forEach(p => headerHtml += `<th>${p}</th>`);
+            partaiList.forEach(p => headerHtml += `<th>${getLogoHtml(p)}<br><small>${p}</small></th>`);
             headerHtml += '</tr>';
             thead.innerHTML = headerHtml;
 
             tbody.innerHTML = '';
             dapils.forEach(dapil => {
-                const kecamatans = Object.keys(sebaran[dapil]);
-
-                // 1. Hitung Total Suara Dapil Terlebih Dahulu
+                const kecamatans = Object.keys(sebaran[dapil]).sort((a, b) => a.localeCompare(b, undefined, {numeric: true, sensitivity: 'base'}));
+                
                 let dapilTotals = {};
                 let totalSuaraDapil = 0;
+                
                 kecamatans.forEach(kec => {
                     partaiList.forEach(p => {
                         const suara = sebaran[dapil][kec][p] || 0;
@@ -924,27 +1072,44 @@
                     });
                 });
 
-                // 2. Render Baris Utama (Dapil)
-                let rowDapil = `<tr class="table-secondary">
-                                    <td class="text-start fw-bold text-uppercase">${dapil}</td>`;
+                let maxSuaraDapil = 0;
+                if(totalSuaraDapil > 0) {
+                    maxSuaraDapil = Math.max(...partaiList.map(px => (dapilTotals[px] || 0)));
+                }
+
+                let rowDapil = `<tr class="table-secondary"><td class="text-start fw-bold text-uppercase">${dapil}</td>`;
                 partaiList.forEach(p => {
-                    const pctPartaiDapil = totalSuaraDapil > 0 ? ((dapilTotals[p] / totalSuaraDapil) * 100).toFixed(2) : "0.00";
-                    rowDapil += `<td class="align-middle text-primary"><span class="fw-bold fs-6">${pctPartaiDapil}%</span></td>`;
+                    const suaraPartai = dapilTotals[p] || 0;
+                    const pctPartaiDapil = totalSuaraDapil > 0 ? ((suaraPartai / totalSuaraDapil) * 100).toFixed(2) : "0.00";
+                    
+                    if(suaraPartai === maxSuaraDapil && maxSuaraDapil > 0) {
+                        rowDapil += `<td class="align-middle bg-success bg-opacity-10 text-success"><span class="fw-bolder" style="font-size: 1.25rem;">${pctPartaiDapil}%</span></td>`;
+                    } else {
+                        rowDapil += `<td class="align-middle text-primary"><span class="fw-bold fs-6">${pctPartaiDapil}%</span></td>`;
+                    }
                 });
                 rowDapil += '</tr>';
                 tbody.innerHTML += rowDapil;
 
-                // 3. Render Baris Rincian (Kecamatan)
                 kecamatans.forEach(kec => {
                     let totalSuaraKec = 0;
                     partaiList.forEach(p => { totalSuaraKec += (sebaran[dapil][kec][p] || 0); });
 
-                    let rowKec = `<tr>
-                                    <td class="text-start ps-4"><i class="fas fa-angle-right text-muted me-2"></i> ${kec}</td>`;
+                    let maxSuaraKec = 0;
+                    if(totalSuaraKec > 0) {
+                        maxSuaraKec = Math.max(...partaiList.map(px => (sebaran[dapil][kec][px] || 0)));
+                    }
+
+                    let rowKec = `<tr><td class="text-start ps-4"><i class="fas fa-angle-right text-muted me-2"></i> ${kec}</td>`;
                     partaiList.forEach(p => {
                         const suaraPartaiKec = sebaran[dapil][kec][p] || 0;
                         const pctPartaiKec = totalSuaraKec > 0 ? ((suaraPartaiKec / totalSuaraKec) * 100).toFixed(2) : "0.00";
-                        rowKec += `<td class="align-middle"><span class="fw-bold fs-6">${pctPartaiKec}%</span></td>`;
+                        
+                        if(suaraPartaiKec === maxSuaraKec && maxSuaraKec > 0) {
+                            rowKec += `<td class="align-middle bg-success bg-opacity-10 text-success"><span class="fw-bolder" style="font-size: 1.15rem;">${pctPartaiKec}%</span></td>`;
+                        } else {
+                            rowKec += `<td class="align-middle"><span class="fw-bold fs-6">${pctPartaiKec}%</span></td>`;
+                        }
                     });
                     rowKec += '</tr>';
                     tbody.innerHTML += rowKec;
@@ -952,80 +1117,898 @@
             });
         }
 
-        function updateTitlesUI() {
-            document.getElementById('display-title-dpr').innerText = document.getElementById('config-title-dpr').value;
-            document.getElementById('display-subtitle-dpr').innerText = document.getElementById('config-subtitle-dpr').value;
-            document.getElementById('display-title-dprd').innerText = document.getElementById('config-title-dprd').value;
-            document.getElementById('display-subtitle-dprd').innerText = document.getElementById('config-subtitle-dprd').value;
-            document.getElementById('running-text-display').innerText = document.getElementById('config-running-text').value;
-            
-            // Update Label Header Leaderboard
-            document.getElementById('display-top-dpr').innerText = `Top ${document.getElementById('config-dpr-top').value}`;
-            document.getElementById('display-top-dprd').innerText = `Top ${document.getElementById('config-dprd-top').value}`;
-        }
-
         function simpanPengaturan() {
-            const dprCl = document.getElementById('config-dpr-cl').value;
-            const dprMoe = document.getElementById('config-dpr-moe').value;
-            const dprdCl = document.getElementById('config-dprd-cl').value;
-            const dprdMoe = document.getElementById('config-dprd-moe').value;
+            showLoading(true, "Menyimpan Konfigurasi...");
 
-            updateTitlesUI();
+            const judulDashboard = safeGetValue('config-judul-dashboard', 'Quick Count Pro 2026');
+            const runningText = safeGetValue('config-running-text', '');
 
-            alert(`Pengaturan disimpan!\nDPR RI: CL=${dprCl}%, MoE=±${dprMoe}%\nDPRD: CL=${dprdCl}%, MoE=±${dprdMoe}%`);
+            let url = '';
+            document.querySelectorAll('input[type="url"]').forEach(el => {
+                if (el.id.includes('config-url-webapp') && el.value.trim() !== '') {
+                    url = el.value.trim();
+                }
+            });
             
-            // Memanggil ulang data agar tabel Leaderboard langsung terupdate
-            loadData();
-            
-            // Implementasi real: kirim data ke GAS via google.script.run
-            // google.script.run.withSuccessHandler(...).saveSettings({ ... });
+            if(url) localStorage.setItem('GAS_WEBAPP_URL', url);
+            if(runningText) {
+                localStorage.setItem('RUNNING_TEXT', runningText);
+                const configText = document.getElementById('config-running-text');
+                const displayText = document.getElementById('display-running-text');
+                const runningTextEl = document.getElementById('running-text-display');
+                
+                if (configText) configText.value = runningText;
+                if (displayText) displayText.innerText = runningText;
+                if (runningTextEl) runningTextEl.innerText = runningText;
+            }
+
+            // Kumpulkan Data Konfigurasi Dinamis (Per Dapil)
+            const dataSettings = [
+                ["JUDUL_DASHBOARD", judulDashboard, "Judul Utama Dashboard"],
+                ["RUNNING_TEXT", runningText, "Teks Bergerak"]
+            ];
+
+            document.querySelectorAll('.config-title').forEach(el => {
+                dataSettings.push(["TITLE_" + el.dataset.dapil, el.value, "Judul Tampilan"]);
+            });
+            document.querySelectorAll('.config-subtitle').forEach(el => {
+                dataSettings.push(["SUBTITLE_" + el.dataset.dapil, el.value, "Sub Judul Tampilan"]);
+            });
+            document.querySelectorAll('.config-cl').forEach(el => {
+                dataSettings.push(["CL_" + el.dataset.dapil, el.value, "Confidence Level"]);
+            });
+            document.querySelectorAll('.config-moe').forEach(el => {
+                const safeMoe = el.value.replace(/,/g, '.');
+                dataSettings.push(["MOE_" + el.dataset.dapil, safeMoe, "Margin of Error"]);
+            });
+            document.querySelectorAll('.config-top').forEach(el => {
+                dataSettings.push(["TOP_" + el.dataset.dapil, el.value, "Top Caleg"]);
+            });
+
+            if(!url || url.trim() === '') {
+                showLoading(false);
+                alert(`Pengaturan disimpan secara lokal. Anda BELUM MENGISI URL WEB APP GAS!`);
+                loadData();
+            } else {
+                fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ action: 'saveSettings', data: dataSettings })
+                })
+                .then(res => res.json())
+                .then(response => {
+                    showLoading(false);
+                    loadData();
+                })
+                .catch(err => {
+                    showLoading(false);
+                    loadData();
+                });
+            }
         }
 
-        // --- Fitur Fullscreen & Auto Refresh ---
         function toggleFullScreen() {
             if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen().catch(err => {
-                    console.log(`Error attempting to enable fullscreen: ${err.message}`);
-                });
-                document.getElementById('btn-fullscreen').innerHTML = '<i class="fas fa-compress"></i>';
+                document.documentElement.requestFullscreen().catch(err => {});
+                const btn = document.getElementById('btn-fullscreen');
+                if(btn) btn.innerHTML = '<i class="fas fa-compress"></i>';
             } else {
                 if (document.exitFullscreen) {
                     document.exitFullscreen();
-                    document.getElementById('btn-fullscreen').innerHTML = '<i class="fas fa-expand"></i>';
+                    const btn = document.getElementById('btn-fullscreen');
+                    if(btn) btn.innerHTML = '<i class="fas fa-expand"></i>';
                 }
             }
         }
 
         function toggleAutoRefresh() {
-            const isChecked = document.getElementById('auto-refresh-check').checked;
-            if (isChecked) {
-                // Set interval 10 detik (10.000 ms)
-                autoRefreshInterval = setInterval(() => {
-                    loadData();
-                }, 10000);
+            const check = document.getElementById('auto-refresh-check');
+            if(!check) return;
+            
+            if (check.checked) {
+                autoRefreshInterval = setInterval(() => { loadData(); }, 5000); 
             } else {
-                // Hentikan interval
                 clearInterval(autoRefreshInterval);
                 autoRefreshInterval = null;
             }
         }
 
-        // --- Fitur Buka Sheet & Setup Database ---
-        function bukaSheet(sheetName) {
-            alert(`Membuka Google Sheets pada tab/sheet: ${sheetName}\n\n(Di aplikasi riil, tombol ini bisa dihubungkan langsung ke URL Spreadsheet Anda dengan menambahkan tautan/link yang sesuai)`);
-            // Contoh Implementasi riil: window.open('https://docs.google.com/spreadsheets/d/ID_SPREADSHEET_ANDA/edit#gid=ID_SHEET', '_blank');
+        function setWaktuUpdate() {
+            const now = new Date();
+            const tanggal = String(now.getDate()).padStart(2, '0') + '/' + String(now.getMonth() + 1).padStart(2, '0') + '/' + now.getFullYear();
+            const waktu = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0') + ':' + String(now.getSeconds()).padStart(2, '0');
+            const navUpdate = document.getElementById('last-update');
+            if(navUpdate) navUpdate.innerText = `Update: ${tanggal} - ${waktu} WIB`;
         }
 
-        function jalankanSetupDatabase() {
-            if(confirm("Apakah Anda yakin ingin menjalankan Setup Database?\n\nIni akan membuat struktur tabel baru di Google Sheets Anda jika belum ada.")) {
-                alert("Perintah dikirim ke server.\n\nDalam implementasi nyata, ini akan memanggil fungsi 'setupDatabase()' di dalam file Code.gs");
-                
-                // Implementasi riil dengan GAS:
-                // google.script.run
-                //     .withSuccessHandler(() => alert('Setup Database Selesai! Silakan cek Google Sheets Anda.'))
-                //     .setupDatabase();
+        // =========================================================
+        // FITUR MANAJEMEN DATA
+        // =========================================================
+        
+        function simpanDataMaster(type) {
+            let tableId = '';
+            let sheetName = '';
+            
+            if (type === 'wilayah') {
+                tableId = 'tabel-wilayah';
+                sheetName = 'Master_Wilayah';
+            } else if (type === 'partai') {
+                tableId = 'tabel-partai';
+                sheetName = 'Master_Partai';
+            } else if (type === 'caleg_dpr') {
+                tableId = 'tabel-caleg-dpr';
+                sheetName = 'Master_Caleg_DPR';
+            }
+
+            const table = document.getElementById(tableId);
+            if (!table) return;
+
+            let dataToSave = [];
+            const rows = table.querySelectorAll('tbody tr');
+            
+            if (rows.length === 1 && rows[0].querySelector('td.text-muted')) {
+                dataToSave = []; 
+            } else {
+                rows.forEach(row => {
+                    let rowData = [];
+                    const cells = row.querySelectorAll('td');
+                    
+                    for (let i = 0; i < cells.length; i++) {
+                        if (cells[i].classList.contains('aksi-col') || cells[i].classList.contains('preview-col') || cells[i].classList.contains('check-col')) {
+                            continue;
+                        }
+                        let cellValue = cells[i].innerText.trim();
+                        const selectEl = cells[i].querySelector('select');
+                        if (selectEl) cellValue = selectEl.value;
+                        rowData.push(cellValue);
+                    }
+                    if (rowData.join('').trim() !== '') dataToSave.push(rowData);
+                });
+            }
+
+            showLoading(true, "Menyimpan Master Data...");
+
+            const webAppUrl = document.getElementById('config-url-webapp') ? document.getElementById('config-url-webapp').value : '';
+            if(!webAppUrl || webAppUrl.trim() === '') {
+                showLoading(false);
+                alert(`URL WEB APP GAS belum diatur!`);
+                return;
+            } 
+            
+            fetch(webAppUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ action: 'saveMasterData', sheetName: sheetName, data: dataToSave })
+            })
+            .then(res => res.json())
+            .then(response => {
+                showLoading(false);
+                if(response.status === 'success') {
+                    // Berhasil
+                } else {
+                    alert("Gagal di server: " + response.message);
+                }
+            })
+            .catch(err => {
+                showLoading(false);
+                console.error(err);
+            });
+        }
+
+        function toggleAll(source, tbodyId) {
+            const checkboxes = document.querySelectorAll(`#${tbodyId} .row-check`);
+            checkboxes.forEach(cb => cb.checked = source.checked);
+        }
+
+        function hapusTerpilih(tbodyId, type) {
+            const tbody = document.getElementById(tbodyId);
+            const checkboxes = tbody.querySelectorAll('.row-check:checked');
+            if(checkboxes.length === 0) {
+                alert("Pilih setidaknya satu baris.");
+                return;
+            }
+            if(confirm(`Yakin ingin menghapus ${checkboxes.length} data terpilih secara permanen?`)) {
+                checkboxes.forEach(cb => cb.closest('tr').remove());
+                const headerCheck = tbody.closest('table').querySelector('thead .check-col input');
+                if(headerCheck) headerCheck.checked = false;
+                simpanDataMaster(type);
             }
         }
+
+        function hapusBaris(btn, type) {
+            if(confirm("Yakin ingin menghapus data ini secara permanen?")) {
+                btn.closest('tr').remove();
+                simpanDataMaster(type);
+            }
+        }
+
+        function getPartaiList() {
+            const partaiRows = document.querySelectorAll('#tbody-partai tr');
+            const partaiList = [];
+            partaiRows.forEach(row => {
+                if(!row.querySelector('td.text-muted')) { 
+                    const namaPartai = row.cells[2] ? row.cells[2].innerText.trim() : '';
+                    if(namaPartai) partaiList.push(namaPartai);
+                }
+            });
+            return partaiList;
+        }
+        
+        function getDapilList() {
+            const wilayahRows = document.querySelectorAll('#tbody-wilayah tr');
+            const dapilSet = new Set();
+            wilayahRows.forEach(row => {
+                if(!row.querySelector('td.text-muted') && row.cells.length >= 8) { 
+                    const dapil = row.cells[2].innerText.trim();
+                    if(dapil) dapilSet.add(dapil);
+                }
+            });
+            return Array.from(dapilSet);
+        }
+
+        function editBaris(btn) {
+            const tr = btn.closest('tr');
+            const tableId = tr.closest('table').id;
+            const isEditing = tr.classList.contains('editing');
+            
+            let dapilIndex = -1;
+            let partaiIndex = -1;
+            if (tableId === 'tabel-caleg-dpr') {
+                dapilIndex = 3;
+                partaiIndex = 4;
+            }
+
+            if(isEditing) {
+                Array.from(tr.cells).forEach((td, index) => {
+                    if(!td.classList.contains('aksi-col') && !td.classList.contains('preview-col') && !td.classList.contains('check-col')) {
+                        const selectEl = td.querySelector('select');
+                        if (selectEl) {
+                            td.innerText = selectEl.value; 
+                        }
+                        td.contentEditable = "false";
+                        td.style.border = "none";
+                        td.style.backgroundColor = "transparent";
+                    }
+                });
+                tr.classList.remove('editing');
+                btn.innerHTML = '<i class="fas fa-edit"></i>';
+                btn.classList.remove('btn-success');
+                btn.classList.add('btn-warning');
+                btn.title = "Edit";
+                
+                let type = '';
+                if(tableId === 'tabel-wilayah') type = 'wilayah';
+                if(tableId === 'tabel-partai') type = 'partai';
+                if(tableId === 'tabel-caleg-dpr') type = 'caleg_dpr';
+                
+                simpanDataMaster(type);
+            } else {
+                const partaiList = getPartaiList();
+                const dapilList = getDapilList();
+                
+                Array.from(tr.cells).forEach((td, index) => {
+                    if(!td.classList.contains('aksi-col') && !td.classList.contains('preview-col') && !td.classList.contains('check-col')) {
+                        if (index === partaiIndex) {
+                            const currentValue = td.innerText.trim();
+                            let optionsHtml = '<option value="">-- Pilih Partai --</option>';
+                            partaiList.forEach(p => {
+                                const selected = (p === currentValue) ? 'selected' : '';
+                                optionsHtml += `<option value="${p}" ${selected}>${p}</option>`;
+                            });
+                            td.innerHTML = `<select class="form-select form-select-sm" style="border: 1px dashed #0dcaf0;">${optionsHtml}</select>`;
+                            td.contentEditable = "false";
+                            td.style.backgroundColor = "#fff";
+                        } else if (index === dapilIndex) {
+                            const currentValue = td.innerText.trim();
+                            let optionsHtml = '<option value="">-- Pilih Dapil --</option>';
+                            dapilList.forEach(d => {
+                                const selected = (d === currentValue) ? 'selected' : '';
+                                optionsHtml += `<option value="${d}" ${selected}>${d}</option>`;
+                            });
+                            td.innerHTML = `<select class="form-select form-select-sm" style="border: 1px dashed #0dcaf0;">${optionsHtml}</select>`;
+                            td.contentEditable = "false";
+                            td.style.backgroundColor = "#fff";
+                        } else {
+                            td.contentEditable = "true";
+                            td.style.border = "1px dashed #0dcaf0";
+                            td.style.backgroundColor = "#fff";
+                        }
+                    }
+                });
+                tr.classList.add('editing');
+                btn.innerHTML = '<i class="fas fa-check"></i>';
+                btn.classList.remove('btn-warning');
+                btn.classList.add('btn-success');
+                btn.title = "Simpan Perubahan";
+            }
+        }
+
+        function tambahBarisManual(tbodyId, type) {
+            const tbody = document.getElementById(tbodyId);
+            if (!tbody) return;
+
+            if(tbody.querySelector('tr td.text-muted')) {
+                tbody.innerHTML = ''; 
+            }
+
+            const tr = document.createElement('tr');
+            tr.className = "table-info editing"; 
+            
+            const editStyle = `contenteditable="true" style="border: 1px dashed #0dcaf0; background-color: #fff; cursor: text;" title="Klik untuk mengedit teks"`;
+            const checkCol = `<td class="check-col"><input class="form-check-input row-check" type="checkbox"></td>`;
+            const actionCol = `<td class="aksi-col text-nowrap">
+                                <button class="btn btn-sm btn-success me-1" onclick="editBaris(this)" title="Simpan Data"><i class="fas fa-check"></i></button>
+                                <button class="btn btn-sm btn-danger" onclick="hapusBaris(this, '${type}')" title="Hapus"><i class="fas fa-trash"></i></button>
+                              </td>`;
+
+            let htmlContent = '';
+
+            const partaiList = getPartaiList();
+            let optionsHtmlPartai = '<option value="">-- Pilih Partai --</option>';
+            partaiList.forEach(p => {
+                optionsHtmlPartai += `<option value="${p}">${p}</option>`;
+            });
+            const selectPartaiHtml = `<td style="background-color: #fff;"><select class="form-select form-select-sm" style="border: 1px dashed #0dcaf0;">${optionsHtmlPartai}</select></td>`;
+
+            const dapilList = getDapilList();
+            let optionsHtmlDapil = '<option value="">-- Pilih Dapil --</option>';
+            dapilList.forEach(d => {
+                optionsHtmlDapil += `<option value="${d}">${d}</option>`;
+            });
+            const selectDapilHtml = `<td style="background-color: #fff;"><select class="form-select form-select-sm" style="border: 1px dashed #0dcaf0;">${optionsHtmlDapil}</select></td>`;
+
+            if (type === 'wilayah') {
+                htmlContent = `${checkCol}<td ${editStyle}>ID-Baru</td><td ${editStyle}>Dapil...</td><td ${editStyle}>Kab/Kota...</td><td ${editStyle}>Kecamatan...</td><td ${editStyle}>Kel/Desa...</td><td ${editStyle}>TPS...</td>${actionCol}`;
+            } else if (type === 'partai') {
+                htmlContent = `${checkCol}<td ${editStyle}>No</td><td ${editStyle}>Nama Partai</td><td ${editStyle} onblur="updatePreviewLogo(this)">Tempel URL Disini...</td><td class="preview-col"><img src="" style="height:30px; object-fit:contain; display:none;" alt="Logo"></td>${actionCol}`;
+            } else if (type === 'caleg_dpr') {
+                htmlContent = `${checkCol}<td ${editStyle}>No Urut</td><td ${editStyle}>Nama Caleg DPR RI</td>${selectDapilHtml}${selectPartaiHtml}${actionCol}`;
+            }
+
+            tr.innerHTML = htmlContent;
+            tbody.prepend(tr); 
+            setTimeout(() => { tr.classList.remove('table-info'); }, 3000);
+        }
+
+        function updatePreviewLogo(element) {
+            const url = element.innerText.trim();
+            const tr = element.closest('tr');
+            const img = tr.querySelector('.preview-col img');
+            if (img) {
+                if (url && url !== "Tempel URL Disini...") {
+                    img.src = url;
+                    img.style.display = 'inline-block';
+                } else {
+                    img.style.display = 'none';
+                }
+            }
+        }
+
+        function loadMasterData() {
+            const webAppUrl = localStorage.getItem('GAS_WEBAPP_URL') || (document.getElementById('config-url-webapp') ? document.getElementById('config-url-webapp').value : '');
+            if (!webAppUrl || webAppUrl.trim() === '') return;
+
+            showLoading(true, "Menyinkronkan Master Data...");
+
+            fetch(webAppUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ action: 'getMasterData' }) 
+            })
+            .then(res => res.json())
+            .then(response => {
+                showLoading(false);
+                if(response.status === 'success') {
+                    window.masterPartaiList = response.data.partai || [];
+                    window.masterCalegDprList = response.data.caleg_dpr || []; // Menyimpan data caleg untuk filter
+
+                    populateMasterTables(response.data);
+                    populateEntriForm(); 
+                    
+                    // RE-RENDER DASHBOARD JIKA DATA ELECTION SUDAH ADA
+                    if(window.electionData) {
+                        processData(window.electionData);
+                    }
+                }
+            })
+            .catch(err => {
+                showLoading(false);
+                console.error("Gagal memuat Master Data:", err)
+            });
+        }
+
+        function populateMasterTables(masterData) {
+            const checkCol = `<td class="check-col"><input class="form-check-input row-check" type="checkbox"></td>`;
+            
+            const tbodyWilayah = document.getElementById('tbody-wilayah');
+            if(masterData.wilayah && masterData.wilayah.length > 0) {
+                tbodyWilayah.innerHTML = '';
+                masterData.wilayah.forEach(row => {
+                    const actionCol = `<td class="aksi-col text-nowrap">
+                        <button class="btn btn-sm btn-warning me-1" onclick="editBaris(this)"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-sm btn-danger" onclick="hapusBaris(this, 'wilayah')"><i class="fas fa-trash"></i></button>
+                    </td>`;
+                    tbodyWilayah.innerHTML += `<tr>${checkCol}<td>${row[0]}</td><td>${row[1]}</td><td>${row[2]}</td><td>${row[3]}</td><td>${row[4]}</td><td>${row[5]}</td>${actionCol}</tr>`;
+                });
+            } else {
+                tbodyWilayah.innerHTML = '<tr><td colspan="8" class="text-muted">Data kosong. Silakan Tambah Manual atau Import.</td></tr>';
+            }
+            
+            const tbodyPartai = document.getElementById('tbody-partai');
+            if(masterData.partai && masterData.partai.length > 0) {
+                tbodyPartai.innerHTML = '';
+                masterData.partai.forEach(row => {
+                    const actionCol = `<td class="aksi-col text-nowrap">
+                        <button class="btn btn-sm btn-warning me-1" onclick="editBaris(this)"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-sm btn-danger" onclick="hapusBaris(this, 'partai')"><i class="fas fa-trash"></i></button>
+                    </td>`;
+                    tbodyPartai.innerHTML += `<tr>${checkCol}<td>${row[0]}</td><td>${row[1]}</td><td onblur="updatePreviewLogo(this)">${row[2]}</td><td class="preview-col"><img src="${row[2]}" style="height:30px; object-fit:contain;" onerror="this.style.display='none'"></td>${actionCol}</tr>`;
+                });
+            } else {
+                tbodyPartai.innerHTML = '<tr><td colspan="6" class="text-muted">Data kosong. Silakan Tambah Manual atau Import.</td></tr>';
+            }
+
+            const tbodyCalegDpr = document.getElementById('tbody-caleg-dpr');
+            if(masterData.caleg_dpr && masterData.caleg_dpr.length > 0) {
+                tbodyCalegDpr.innerHTML = '';
+                masterData.caleg_dpr.forEach(row => {
+                    const actionCol = `<td class="aksi-col text-nowrap">
+                        <button class="btn btn-sm btn-warning me-1" onclick="editBaris(this)"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-sm btn-danger" onclick="hapusBaris(this, 'caleg_dpr')"><i class="fas fa-trash"></i></button>
+                    </td>`;
+                    const dapilVal = row.length > 3 ? row[2] : '';
+                    const partaiVal = row.length > 3 ? row[3] : row[2];
+                    tbodyCalegDpr.innerHTML += `<tr>${checkCol}<td>${row[0]}</td><td>${row[1]}</td><td>${dapilVal}</td><td>${partaiVal}</td>${actionCol}</tr>`;
+                });
+            } else {
+                tbodyCalegDpr.innerHTML = '<tr><td colspan="6" class="text-muted">Data kosong. Silakan Tambah Manual atau Import.</td></tr>';
+            }
+        }
+
+        function exportTableToExcel(tableId, filename = '') {
+            let table = document.getElementById(tableId);
+            if (!table) return;
+            let cloneTable = table.cloneNode(true);
+            let rows = cloneTable.rows;
+            for (let i = 0; i < rows.length; i++) {
+                let cells = rows[i].cells;
+                for (let j = cells.length - 1; j >= 0; j--) {
+                    if (cells[j].classList.contains('aksi-col') || cells[j].classList.contains('preview-col') || cells[j].classList.contains('check-col')) {
+                        rows[i].deleteCell(j);
+                    }
+                }
+            }
+            let wb = XLSX.utils.table_to_book(cloneTable, {sheet: "Master Data"});
+            XLSX.writeFile(wb, filename + ".xlsx");
+        }
+
+        function importExcelToTable(event, tbodyId, type) {
+            let file = event.target.files[0];
+            if (!file) return;
+
+            showLoading(true, "Mengimpor Excel...");
+            let reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    let data = new Uint8Array(e.target.result);
+                    let workbook = XLSX.read(data, {type: 'array'});
+                    let firstSheet = workbook.SheetNames[0];
+                    let elements = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheet], {header: 1});
+
+                    let tbody = document.getElementById(tbodyId);
+                    if(!tbody) return;
+                    tbody.innerHTML = ''; 
+
+                    for (let i = 1; i < elements.length; i++) {
+                        let row = elements[i];
+                        if (row.length === 0) continue;
+
+                        let tr = document.createElement('tr');
+                        let tdCheck = document.createElement('td');
+                        tdCheck.className = "check-col";
+                        tdCheck.innerHTML = `<input class="form-check-input row-check" type="checkbox">`;
+                        tr.appendChild(tdCheck);
+                        
+                        for (let j = 0; j < row.length; j++) {
+                            let td = document.createElement('td');
+                            td.innerText = row[j] || '';
+                            tr.appendChild(td);
+                        }
+
+                        if (type === 'partai') {
+                            let urlFoto = row[2] || ''; 
+                            let tdPreview = document.createElement('td');
+                            tdPreview.className = "preview-col";
+                            if (urlFoto && urlFoto.trim() !== '') {
+                                tdPreview.innerHTML = `<img src="${urlFoto}" style="height:30px; object-fit:contain;" alt="Logo" onerror="this.style.display='none'">`;
+                            }
+                            tr.appendChild(tdPreview);
+                        }
+
+                        let tdAksi = document.createElement('td');
+                        tdAksi.className = "aksi-col text-nowrap";
+                        tdAksi.innerHTML = `
+                            <button class="btn btn-sm btn-warning me-1" onclick="editBaris(this)"><i class="fas fa-edit"></i></button>
+                            <button class="btn btn-sm btn-danger" onclick="hapusBaris(this, '${type}')"><i class="fas fa-trash"></i></button>
+                        `;
+                        tr.appendChild(tdAksi);
+                        tbody.appendChild(tr);
+                    }
+                    alert('Data Excel berhasil di-import!\nJANGAN LUPA KLIK TOMBOL "SIMPAN".');
+                } catch (error) {
+                    console.error(error);
+                    alert("Terjadi kesalahan saat membaca file Excel.");
+                } finally {
+                    event.target.value = ''; 
+                    showLoading(false);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // =========================================================
+        // FITUR ENTRI DATA
+        // =========================================================
+        function populateEntriForm() {
+            const wilayahRows = document.querySelectorAll('#tbody-wilayah tr');
+            let wilayahData = [];
+            wilayahRows.forEach(row => {
+                if(!row.querySelector('td.text-muted') && row.cells.length >= 8) {
+                    wilayahData.push({
+                        dapil: row.cells[2].innerText.trim(),
+                        kab: row.cells[3].innerText.trim(),
+                        kec: row.cells[4].innerText.trim(),
+                        kel: row.cells[5].innerText.trim(),
+                        tps: row.cells[6].innerText.trim()
+                    });
+                }
+            });
+            
+            wilayahData = wilayahData.filter((v,i,a)=>a.findIndex(t=>(t.dapil===v.dapil && t.kab===v.kab && t.kec===v.kec && t.kel===v.kel && t.tps===v.tps))===i);
+
+            const dapilSelect = document.getElementById('select-dapil');
+            const kabSelect = document.getElementById('select-kab');
+            const kecSelect = document.getElementById('select-kec');
+            const kelSelect = document.getElementById('select-kel');
+            const tpsSelect = document.getElementById('select-tps');
+
+            const currentDapil = dapilSelect.value;
+            const currentKab = kabSelect.value;
+            const currentKec = kecSelect.value;
+            const currentKel = kelSelect.value;
+            const currentTps = tpsSelect.value;
+
+            const dapils = [...new Set(wilayahData.map(item => item.dapil))];
+            dapilSelect.innerHTML = '<option value="">-- Pilih Dapil --</option>' + dapils.map(d => `<option value="${d}" ${d===currentDapil?'selected':''}>${d}</option>`).join('');
+
+            dapilSelect.onchange = () => {
+                const selectedDapil = dapilSelect.value;
+                const kabs = [...new Set(wilayahData.filter(i => i.dapil === selectedDapil).map(i => i.kab))];
+                kabSelect.innerHTML = '<option value="">-- Pilih Kab/Kota --</option>' + kabs.map(k => `<option value="${k}">${k}</option>`).join('');
+                kecSelect.innerHTML = '<option value="">-- Pilih Kecamatan --</option>';
+                kelSelect.innerHTML = '<option value="">-- Pilih Kel/Desa --</option>';
+                tpsSelect.innerHTML = '<option value="">-- Pilih No TPS --</option>';
+                renderDynamicForm(selectedDapil); 
+            };
+
+            kabSelect.onchange = () => {
+                const selectedDapil = dapilSelect.value;
+                const selectedKab = kabSelect.value;
+                const kecs = [...new Set(wilayahData.filter(i => i.dapil === selectedDapil && i.kab === selectedKab).map(i => i.kec))];
+                kecSelect.innerHTML = '<option value="">-- Pilih Kecamatan --</option>' + kecs.map(k => `<option value="${k}">${k}</option>`).join('');
+                kelSelect.innerHTML = '<option value="">-- Pilih Kel/Desa --</option>';
+                tpsSelect.innerHTML = '<option value="">-- Pilih No TPS --</option>';
+            };
+
+            kecSelect.onchange = () => {
+                const selectedDapil = dapilSelect.value;
+                const selectedKab = kabSelect.value;
+                const selectedKec = kecSelect.value;
+                const kels = [...new Set(wilayahData.filter(i => i.dapil === selectedDapil && i.kab === selectedKab && i.kec === selectedKec).map(i => i.kel))];
+                kelSelect.innerHTML = '<option value="">-- Pilih Kel/Desa --</option>' + kels.map(k => `<option value="${k}">${k}</option>`).join('');
+                tpsSelect.innerHTML = '<option value="">-- Pilih No TPS --</option>';
+            };
+
+            kelSelect.onchange = () => {
+                const selectedDapil = dapilSelect.value;
+                const selectedKab = kabSelect.value;
+                const selectedKec = kecSelect.value;
+                const selectedKel = kelSelect.value;
+                const tpss = [...new Set(wilayahData.filter(i => i.dapil === selectedDapil && i.kab === selectedKab && i.kec === selectedKec && i.kel === selectedKel).map(i => i.tps))];
+                tpsSelect.innerHTML = '<option value="">-- Pilih No TPS --</option>' + tpss.map(t => `<option value="${t}">${t}</option>`).join('');
+            };
+
+            if(currentDapil) {
+                dapilSelect.onchange();
+                if(currentKab) { kabSelect.value = currentKab; kabSelect.onchange(); }
+                if(currentKec) { kecSelect.value = currentKec; kecSelect.onchange(); }
+                if(currentKel) { kelSelect.value = currentKel; kelSelect.onchange(); }
+                if(currentTps) { tpsSelect.value = currentTps; }
+            } else {
+                renderDynamicForm('');
+            }
+        }
+
+        function renderDynamicForm(selectedDapil) {
+            const formContainer = document.getElementById('dynamic-entri-form');
+            if (!selectedDapil) {
+                formContainer.innerHTML = '<div class="col-12 text-muted">Silakan pilih Dapil pada dropdown di atas untuk memuat daftar Partai & Caleg yang sesuai.</div>';
+                return;
+            }
+
+            const partaiRows = document.querySelectorAll('#tbody-partai tr');
+            let listPartai = [];
+            partaiRows.forEach(row => {
+                if(!row.querySelector('td.text-muted') && row.cells.length >= 3) {
+                    listPartai.push(row.cells[2].innerText.trim());
+                }
+            });
+
+            const dprRows = document.querySelectorAll('#tbody-caleg-dpr tr');
+            let listCaleg = [];
+            dprRows.forEach(row => {
+                if(!row.querySelector('td.text-muted') && row.cells.length >= 5) {
+                    const noUrut = parseInt(row.cells[1].innerText.trim()) || 999;
+                    const namaCaleg = row.cells[2].innerText.trim();
+                    const selectDapilEl = row.cells[3].querySelector('select');
+                    const dapil = selectDapilEl ? selectDapilEl.value : row.cells[3].innerText.trim();
+                    const selectPartaiEl = row.cells[4].querySelector('select');
+                    const partai = selectPartaiEl ? selectPartaiEl.value : row.cells[4].innerText.trim();
+
+                    listCaleg.push({ noUrut: noUrut, nama: namaCaleg, dapil: dapil, partai: partai });
+                }
+            });
+
+            let html = '<div class="row g-4">';
+            if (listPartai.length === 0) {
+                html += '<div class="col-12 text-muted">Data Master Partai kosong. Silakan isi terlebih dahulu.</div>';
+            } else {
+                listPartai.forEach(partai => {
+                    const calegPartaiIni = listCaleg.filter(c => c.partai === partai && c.dapil === selectedDapil);
+                    calegPartaiIni.sort((a, b) => a.noUrut - b.noUrut);
+                    
+                    html += `<div class="col-12">
+                                <div class="p-3 border rounded shadow-sm" style="background-color: #ffffff;">
+                                    <h6 class="fw-bold text-white bg-primary p-2 rounded mb-3">${getLogoHtml(partai)}${partai}</h6>
+                                    <div class="row g-3">`;
+                    
+                    calegPartaiIni.forEach((c) => {
+                        html += `
+                            <div class="col-md-4 col-sm-6">
+                                <label class="form-label text-dark" style="font-size:0.85rem;">Suara Caleg ${c.noUrut}: <strong>${c.nama}</strong></label>
+                                <input type="number" class="form-control form-control-sm input-caleg-dpr" data-caleg="${c.nama}" data-partai="${partai}" placeholder="0" min="0" oninput="hitungTotalSah()">
+                            </div>`;
+                    });
+
+                    html += `
+                            <div class="col-md-4 col-sm-6">
+                                <label class="form-label text-primary fw-bold" style="font-size:0.85rem;">Suara Partai Saja: <strong>${partai}</strong></label>
+                                <input type="number" class="form-control form-control-sm input-partai border-primary text-primary fw-bold" data-partai="${partai}" placeholder="0" min="0" style="background-color: #f0fdf4;" oninput="hitungTotalSah()">
+                            </div>
+                        </div></div></div>`;
+                });
+            }
+            html += '</div>';
+            formContainer.innerHTML = html;
+            hitungTotalSah(); 
+        }
+
+        function hitungTotalSah() {
+            let total = 0;
+            document.querySelectorAll('.input-caleg-dpr').forEach(el => { total += parseInt(el.value) || 0; });
+            document.querySelectorAll('.input-partai').forEach(el => { total += parseInt(el.value) || 0; });
+            const inputTotalSah = document.getElementById('input-suara-sah');
+            if (inputTotalSah) inputTotalSah.value = total > 0 ? total : '';
+            validasiDPT();
+        }
+        
+        function validasiDPT() {
+            const dpt = parseInt(document.getElementById('input-dpt').value) || 0;
+            const sah = parseInt(document.getElementById('input-suara-sah').value) || 0;
+            const tidakSah = parseInt(document.getElementById('input-suara-tidak-sah').value) || 0;
+            const totalSuara = sah + tidakSah;
+            const warningEl = document.getElementById('warning-dpt');
+            
+            if (dpt > 0 && totalSuara > dpt) {
+                if (warningEl) warningEl.classList.remove('d-none');
+            } else {
+                if (warningEl) warningEl.classList.add('d-none');
+            }
+        }
+
+        function resetEntriForm() {
+            document.querySelectorAll('#entri-data input[type="number"]').forEach(input => input.value = '');
+            hitungTotalSah(); 
+            const warningEl = document.getElementById('warning-dpt');
+            if(warningEl) warningEl.classList.add('d-none');
+        }
+
+        function submitEntriData() {
+            const dapil = safeGetValue('select-dapil');
+            const kab = safeGetValue('select-kab');
+            const kec = safeGetValue('select-kec');
+            const kel = safeGetValue('select-kel');
+            const tps = safeGetValue('select-tps');
+
+            if(!dapil || !kab || !kec || !kel || !tps) {
+                alert("Harap lengkapi pilihan hierarki wilayah hingga Titik Sampel (TPS) terlebih dahulu sebelum menyimpan data!");
+                return;
+            }
+
+            // Ambil URL dengan prioritas dari Local Storage agar lebih stabil
+            const webAppUrl = localStorage.getItem('GAS_WEBAPP_URL') || safeGetValue('config-url-webapp');
+            if(!webAppUrl || webAppUrl.trim() === '') {
+                alert("URL Web App belum diatur! Silakan isi di tab Konfigurasi agar data entri dapat disimpan.");
+                return;
+            }
+
+            const dpt = parseInt(document.getElementById('input-dpt').value) || 0;
+            const sah = parseInt(document.getElementById('input-suara-sah').value) || 0;
+            const tidakSah = parseInt(document.getElementById('input-suara-tidak-sah').value) || 0;
+            const totalSuara = sah + tidakSah;
+            
+            if (dpt <= 0) {
+                alert("GAGAL MENYIMPAN: Harap isi Jumlah DPT terlebih dahulu!");
+                document.getElementById('input-dpt').focus();
+                return;
+            }
+            if (totalSuara > dpt) {
+                alert("GAGAL MENYIMPAN: Total Suara (Sah + Tidak Sah) melebihi jumlah DPT yang terdaftar!\nSilakan periksa kembali angka yang diinput.");
+                return;
+            }
+
+            const suaraPartai = {};
+            document.querySelectorAll('.input-partai').forEach(el => {
+                suaraPartai[el.dataset.partai] = parseInt(el.value) || 0;
+            });
+
+            const suaraDpr = {};
+            document.querySelectorAll('.input-caleg-dpr').forEach(el => {
+                suaraDpr[el.dataset.caleg] = parseInt(el.value) || 0;
+            });
+
+            showLoading(true, "Menyimpan Data Suara ke Server...");
+
+            const payloadData = {
+                dapil: dapil,
+                kabupaten: kab, 
+                kecamatan: kec, 
+                kelurahan: kel, 
+                tps: tps,
+                dpt: dpt,
+                suara_partai: suaraPartai,
+                suara_caleg_dpr: suaraDpr,
+                suara_tidak_sah: tidakSah,
+                timestamp: new Date().toISOString()
+            };
+
+            fetch(webAppUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ action: 'saveEntriData', data: payloadData }),
+                redirect: 'follow' 
+            })
+            .then(res => res.text()) 
+            .then(text => {
+                showLoading(false);
+                let res;
+                try {
+                    res = JSON.parse(text);
+                } catch (e) {
+                    console.error("Respon bukan JSON yang valid:", text);
+                    alert("Data telah dikirim, namun server merespon dengan format yang tidak dikenali. Silakan periksa Spreadsheet Anda.");
+                    return;
+                }
+                
+                if(res.status === 'success') {
+                    alert(`BERHASIL! Data Suara untuk TPS ${tps} telah sukses tersimpan ke database (GAS).`);
+                    resetEntriForm();
+                    
+                    // Trigger sinkronisasi otomatis agar angka di dashboard langsung bertambah
+                    setTimeout(() => {
+                        syncDataManual();
+                    }, 500);
+                } else {
+                    alert("Gagal menyimpan ke server: " + res.message);
+                }
+            })
+            .catch(err => {
+                showLoading(false);
+                alert("Terjadi Error Jaringan atau CORS saat menyimpan data. Pastikan URL Web App benar dan diatur ke 'Siapa Saja' (Anyone).\n\nDetail: " + err.message);
+                console.error(err);
+            });
+        }
+
+        function sortTable(tableId, n, type) {
+            var table, rows, switching, i, x, y, shouldSwitch, dir, switchcount = 0;
+            table = document.getElementById(tableId);
+            switching = true;
+            dir = "asc"; 
+            
+            var headers = table.getElementsByTagName("TH");
+            for (let j = 0; j < headers.length; j++) {
+                let icon = headers[j].querySelector("i.fas");
+                if (icon) icon.className = "fas fa-sort text-muted ms-1";
+            }
+            
+            var currentIcon = headers[n].querySelector("i.fas");
+
+            while (switching) {
+                switching = false;
+                rows = table.getElementsByTagName("TR");
+                
+                for (i = 1; i < (rows.length - 1); i++) {
+                    shouldSwitch = false;
+                    
+                    if(rows[i].cells[0] && rows[i].cells[0].classList.contains("text-muted")) continue;
+                    if(rows[i+1].cells[0] && rows[i+1].cells[0].classList.contains("text-muted")) continue;
+
+                    x = rows[i].getElementsByTagName("TD")[n];
+                    y = rows[i + 1].getElementsByTagName("TD")[n];
+                    
+                    if(!x || !y) continue;
+
+                    let xVal = x.querySelector('select') ? x.querySelector('select').value : x.innerText;
+                    let yVal = y.querySelector('select') ? y.querySelector('select').value : y.innerText;
+
+                    if (type === 'num') {
+                        xVal = parseInt(xVal) || 0;
+                        yVal = parseInt(yVal) || 0;
+                    } else {
+                        xVal = xVal.toLowerCase();
+                        yVal = yVal.toLowerCase();
+                    }
+
+                    if (dir == "asc") {
+                        if (xVal > yVal) { shouldSwitch = true; break; }
+                    } else if (dir == "desc") {
+                        if (xVal < yVal) { shouldSwitch = true; break; }
+                    }
+                }
+                if (shouldSwitch) {
+                    rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+                    switching = true;
+                    switchcount ++;      
+                } else {
+                    if (switchcount == 0 && dir == "asc") {
+                        dir = "desc";
+                        switching = true;
+                    }
+                }
+            }
+            
+            if(currentIcon) {
+                currentIcon.className = dir === "asc" ? "fas fa-sort-up text-white ms-1" : "fas fa-sort-down text-white ms-1";
+            }
+        }
+
+        window.addEventListener('load', function() {
+            let savedUrl = localStorage.getItem('GAS_WEBAPP_URL');
+            const defaultUrl = "https://script.google.com/macros/s/AKfycbzIWQ5w1m_5Mfsi0XUvRXEpMDx9GQfEz5bwNbrpFl6p5SPytUGOVvXAuKeAMARl4IK1/exec";
+            
+            if(!savedUrl) {
+                savedUrl = defaultUrl;
+                localStorage.setItem('GAS_WEBAPP_URL', savedUrl);
+            }
+            
+            document.querySelectorAll('input[type="url"]').forEach(el => {
+                if(el.id.includes('config-url-webapp')) el.value = savedUrl;
+            });
+            
+            const savedText = localStorage.getItem('RUNNING_TEXT');
+            if(savedText) {
+                const configText = document.getElementById('config-running-text');
+                const displayText = document.getElementById('display-running-text');
+                const runningText = document.getElementById('running-text-display');
+                
+                if (configText) configText.value = savedText;
+                if (displayText) displayText.innerText = savedText;
+                if (runningText) runningText.innerText = savedText;
+            }
+            
+            setWaktuUpdate();
+            loadMasterData(); 
+        });
     </script>
 </body>
 </html>
