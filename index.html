@@ -346,6 +346,9 @@
                             <li class="nav-item" role="presentation">
                                 <button class="nav-link" id="entri-data-tab" data-bs-toggle="tab" data-bs-target="#entri-data" type="button" role="tab" onclick="populateEntriForm()"><i class="fas fa-keyboard me-2"></i>Entri Data Suara</button>
                             </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="tabel-suara-tab" data-bs-toggle="tab" data-bs-target="#tabel-suara" type="button" role="tab" onclick="fetchLogSuara()"><i class="fas fa-list-ul me-2"></i>Tabel Suara</button>
+                            </li>
                         </ul>
 
                         <div class="tab-content" id="dataSubTabContent">
@@ -489,7 +492,10 @@
                                 </div>
 
                                 <div class="p-3 rounded" style="background-color: #f8fafc; border: 1px solid #e2e8f0;">
-                                    <h6 class="mb-3 fw-bold text-dark border-bottom pb-2">Form Entri Suara (Berdasarkan Partai & Caleg)</h6>
+                                    <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+                                        <h6 class="mb-0 fw-bold text-dark">Form Entri Suara (Berdasarkan Partai & Caleg)</h6>
+                                        <span id="badge-edit-mode" class="badge bg-warning text-dark d-none px-2 py-1 shadow-sm"><i class="fas fa-pen me-1"></i> Mode Edit Aktif</span>
+                                    </div>
                                     
                                     <div id="dynamic-entri-form">
                                         <div class="col-12 text-muted">Silakan pilih Dapil pada form di atas untuk memuat daftar Caleg.</div>
@@ -523,6 +529,37 @@
                                 </div>
 
                             </div>
+
+                            <!-- MENU 5: TABEL SUARA -->
+                            <div class="tab-pane fade" id="tabel-suara" role="tabpanel">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h5 class="mb-0 fw-bold text-dark">Data Entri Suara (Log TPS)</h5>
+                                    <div class="btn-group">
+                                        <button class="btn btn-danger btn-sm fw-bold border border-light" onclick="hapusTerpilihLog()"><i class="fas fa-trash-alt me-1"></i> Hapus Terpilih</button>
+                                        <button class="btn btn-primary btn-sm fw-bold" onclick="fetchLogSuara()"><i class="fas fa-sync-alt me-1"></i> Muat Data</button>
+                                    </div>
+                                </div>
+                                <div class="table-responsive table-scroll" style="max-height: 500px;">
+                                    <table id="tabel-data-suara" class="table table-hover align-middle">
+                                        <thead class="table-dark sticky-top text-center">
+                                            <tr>
+                                                <th class="check-col" style="width: 40px;"><input class="form-check-input" type="checkbox" onchange="toggleAll(this, 'tbody-data-suara')"></th>
+                                                <th>Dapil</th>
+                                                <th>Kab/Kota</th>
+                                                <th>Kecamatan</th>
+                                                <th>Kel/Desa</th>
+                                                <th>TPS</th>
+                                                <th>Detail Suara</th>
+                                                <th class="aksi-col">Aksi</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tbody-data-suara">
+                                            <tr><td colspan="8" class="text-muted text-center">Klik "Muat Data" untuk menarik log entri suara dari server...</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
                         </div>
                     </div>
                 </div>
@@ -541,6 +578,9 @@
         window.masterPartaiList = []; 
         window.masterCalegDprList = []; 
         window.appSettings = {}; 
+        window.localLogSuara = []; 
+        window.logSuaraData = [];
+        window.editingLogKey = null; // Menyimpan kunci data asli saat mode edit
 
         document.addEventListener("DOMContentLoaded", () => {
             loadData();
@@ -666,15 +706,47 @@
         // =========================================================
         function processData(data) {
             window.electionData = data;
-            const sumDapil = data.summary_dapil;
-            const dapils = Object.keys(sumDapil).sort();
             
-            if (dapils.length === 0) return;
+            // FILTER HANYA DAPIL YANG AKTIF DI MASTER WILAYAH
+            const activeDapils = getDapilList().sort(); // Jadikan activeDapils sebagai acuan utama
+            const dapils = activeDapils;
+            
+            // Hitung total TPS target langsung dari tabel Wilayah Frontend agar 100% akurat
+            const wilayahRows = document.querySelectorAll('#tbody-wilayah tr');
+            let targetTpsPerDapilFE = {};
+            wilayahRows.forEach(row => {
+                if(!row.querySelector('td.text-muted') && row.cells.length >= 8) {
+                    const d = row.cells[2].innerText.trim();
+                    targetTpsPerDapilFE[d] = (targetTpsPerDapilFE[d] || 0) + 1;
+                }
+            });
+
+            const rawSumDapil = data.summary_dapil || {};
 
             const existingDynamicTabs = document.querySelectorAll('.dynamic-dapil-tab');
             const existingDynamicPanes = document.querySelectorAll('.dynamic-dapil-pane');
-            
-            if (existingDynamicTabs.length !== dapils.length) {
+
+            // Tangani jika dapils kosong setelah filter atau memang kosong
+            if (dapils.length === 0) {
+                existingDynamicTabs.forEach(t => t.remove());
+                existingDynamicPanes.forEach(p => p.remove());
+                
+                const containerConfig = document.getElementById('dynamic-config-container');
+                if (containerConfig) containerConfig.innerHTML = '<div class="text-muted fst-italic">Belum ada data Dapil yang aktif.</div>';
+                
+                const tbodyDapilDpr = document.querySelector('#dapil-table-dpr tbody');
+                const theadDapilDpr = document.querySelector('#dapil-table-dpr thead');
+                if(tbodyDapilDpr) tbodyDapilDpr.innerHTML = '<tr><td colspan="100%" class="text-center text-muted">Data kosong</td></tr>';
+                if(theadDapilDpr) theadDapilDpr.innerHTML = '<tr><th>Wilayah (Dapil & Kec)</th></tr>';
+                return;
+            }
+
+            // Check if dapil arrays are identical
+            const existingDapilIds = Array.from(existingDynamicTabs).map(t => t.querySelector('button').id.replace('tab-', ''));
+            const newDapilIds = dapils.map(d => d.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase());
+            const isIdentical = existingDapilIds.length === newDapilIds.length && existingDapilIds.every((val, index) => val === newDapilIds[index]);
+
+            if (!isIdentical) {
                 // PERBAIKAN: Ambil state active tab sebelum direkonstruksi
                 let activeTarget = null;
                 const activeNav = document.querySelector('#myTab .nav-link.active');
@@ -831,13 +903,19 @@
 
             dapils.forEach((dapil) => {
                 const safeId = dapil.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase();
-                const sum = sumDapil[dapil];
+                const sum = rawSumDapil[dapil] || { total_tps_sampel: 0, tps_masuk: 0, suara_sah: 0, suara_tidak_sah: 0, total_dpt: 0 };
                 const dapilTop = window.appSettings['TOP_' + safeId] || '5';
                 
                 // --- KALKULASI STATISTIK KARTU ATAS ---
-                const totalTpsSampel = parseInt(sum.total_tps_sampel) || 0;
-                const tpsMasuk = parseInt(sum.tps_masuk) || 0;
+                // Gunakan perhitungan FE sebagai prioritas agar sesuai dengan tabel Manajemen Data
+                const totalTpsSampel = targetTpsPerDapilFE[dapil] || parseInt(sum.total_tps_sampel) || 0;
+                let tpsMasuk = parseInt(sum.tps_masuk) || 0;
                 
+                // Mencegah bug visual jika TPS masuk melebihi target (karena double entry dll)
+                if (tpsMasuk > totalTpsSampel && totalTpsSampel > 0) {
+                    tpsMasuk = totalTpsSampel;
+                }
+
                 let dataMasuk = "0.00";
                 if (totalTpsSampel > 0) {
                     dataMasuk = ((tpsMasuk / totalTpsSampel) * 100).toFixed(2);
@@ -927,7 +1005,17 @@
 
             // Render form konfigurasi berdasarkan Dapil
             renderConfigForm(dapils);
-            renderDapil(data.sebaran_dapil_dpr, 'dapil-table-dpr');
+            
+            // Filter sebaran_dapil_dpr agar hanya dapil yang aktif
+            const activeSebaran = {};
+            if(data.sebaran_dapil_dpr) {
+                Object.keys(data.sebaran_dapil_dpr).forEach(d => {
+                    if (activeDapils.includes(d)) {
+                        activeSebaran[d] = data.sebaran_dapil_dpr[d];
+                    }
+                });
+            }
+            renderDapil(activeSebaran, 'dapil-table-dpr');
         }
 
         // Merender form konfigurasi dinamis berdasarkan jumlah Dapil
@@ -1308,17 +1396,71 @@
                 return;
             }
             if(confirm(`Yakin ingin menghapus ${checkboxes.length} data terpilih secara permanen?`)) {
+                let oldDapils = [];
+                if (type === 'wilayah') oldDapils = getDapilList();
+
                 checkboxes.forEach(cb => cb.closest('tr').remove());
                 const headerCheck = tbody.closest('table').querySelector('thead .check-col input');
                 if(headerCheck) headerCheck.checked = false;
+                
                 simpanDataMaster(type);
+
+                if (type === 'wilayah') {
+                    checkAndCascadeDapilDeletion(oldDapils);
+                }
             }
         }
 
         function hapusBaris(btn, type) {
             if(confirm("Yakin ingin menghapus data ini secara permanen?")) {
+                let oldDapils = [];
+                if (type === 'wilayah') oldDapils = getDapilList();
+
                 btn.closest('tr').remove();
                 simpanDataMaster(type);
+
+                if (type === 'wilayah') {
+                    checkAndCascadeDapilDeletion(oldDapils);
+                }
+            }
+        }
+
+        function checkAndCascadeDapilDeletion(oldDapils) {
+            const newDapils = getDapilList();
+            const deletedDapils = oldDapils.filter(d => !newDapils.includes(d));
+
+            if (deletedDapils.length > 0) {
+                alert(`Dapil berikut telah terhapus dari referensi Wilayah: ${deletedDapils.join(', ')}.\n\nSistem akan otomatis membersihkan data Caleg yang terkait dan memperbarui tampilan Dashboard & Entri Data agar sinkron.`);
+                
+                // 1. Hapus Caleg yang terkait dengan Dapil yang dihapus
+                const tbodyCaleg = document.getElementById('tbody-caleg-dpr');
+                const calegRows = tbodyCaleg.querySelectorAll('tr');
+                let calegDeleted = false;
+                calegRows.forEach(row => {
+                    if (!row.querySelector('td.text-muted') && row.cells.length >= 5) {
+                        const selectDapilEl = row.cells[3].querySelector('select');
+                        const dapilCell = selectDapilEl ? selectDapilEl.value : row.cells[3].innerText.trim();
+                        
+                        if (deletedDapils.includes(dapilCell)) {
+                            row.remove();
+                            calegDeleted = true;
+                        }
+                    }
+                });
+
+                // Jika ada Caleg yang dihapus, simpan master data caleg ke server
+                if (calegDeleted) {
+                    simpanDataMaster('caleg_dpr');
+                    window.masterCalegDprList = window.masterCalegDprList.filter(c => !deletedDapils.includes(String(c[2]).trim()));
+                }
+
+                // 2. Perbarui Entri Form agar dropdown menyesuaikan dapil yang tersedia
+                populateEntriForm();
+
+                // 3. Update Dashboard agar tidak me-render dapil & perhitungan yang telah dihapus
+                if (window.electionData) {
+                    processData(window.electionData);
+                }
             }
         }
 
@@ -1359,6 +1501,9 @@
             }
 
             if(isEditing) {
+                let oldDapils = [];
+                if (tableId === 'tabel-wilayah') oldDapils = getDapilList();
+
                 Array.from(tr.cells).forEach((td, index) => {
                     if(!td.classList.contains('aksi-col') && !td.classList.contains('preview-col') && !td.classList.contains('check-col')) {
                         const selectEl = td.querySelector('select');
@@ -1382,6 +1527,11 @@
                 if(tableId === 'tabel-caleg-dpr') type = 'caleg_dpr';
                 
                 simpanDataMaster(type);
+
+                // Cek apakah hasil edit membuat ada Dapil yang terhapus/berubah nama
+                if (type === 'wilayah') {
+                    checkAndCascadeDapilDeletion(oldDapils);
+                }
             } else {
                 const partaiList = getPartaiList();
                 const dapilList = getDapilList();
@@ -1821,6 +1971,11 @@
             hitungTotalSah(); 
             const warningEl = document.getElementById('warning-dpt');
             if(warningEl) warningEl.classList.add('d-none');
+            
+            // Matikan Mode Edit jika sedang aktif
+            window.editingLogKey = null;
+            const badgeEdit = document.getElementById('badge-edit-mode');
+            if(badgeEdit) badgeEdit.classList.add('d-none');
         }
 
         function submitEntriData() {
@@ -1876,10 +2031,13 @@
                 kelurahan: kel, 
                 tps: tps,
                 dpt: dpt,
+                sah: sah,
                 suara_partai: suaraPartai,
                 suara_caleg_dpr: suaraDpr,
                 suara_tidak_sah: tidakSah,
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
+                edit_mode: window.editingLogKey ? true : false,
+                old_key: window.editingLogKey // Kirim key lama ke GAS untuk mencari baris yang diedit
             };
 
             fetch(webAppUrl, {
@@ -1902,6 +2060,27 @@
                 
                 if(res.status === 'success') {
                     alert(`BERHASIL! Data Suara untuk TPS ${tps} telah sukses tersimpan ke database (GAS).`);
+                    
+                    // Simpan sementara di state lokal agar Tabel Suara langsung update
+                    if(!window.localLogSuara) window.localLogSuara = [];
+                    
+                    // Hapus data lama dari state lokal jika sedang mode edit
+                    if (window.editingLogKey) {
+                        window.localLogSuara = window.localLogSuara.filter(item => 
+                            !(item.dapil === window.editingLogKey.dapil && 
+                              item.tps === window.editingLogKey.tps && 
+                              item.kecamatan === window.editingLogKey.kecamatan && 
+                              item.kelurahan === window.editingLogKey.kelurahan)
+                        );
+                    } else {
+                        // Hapus jika ada duplikat entri baru (upsert lokal)
+                        window.localLogSuara = window.localLogSuara.filter(item => 
+                            !(item.dapil === payloadData.dapil && item.tps === payloadData.tps && item.kecamatan === payloadData.kecamatan && item.kelurahan === payloadData.kelurahan)
+                        );
+                    }
+
+                    window.localLogSuara.push(payloadData);
+
                     resetEntriForm();
                     
                     // Trigger sinkronisasi otomatis agar angka di dashboard langsung bertambah
@@ -1980,6 +2159,294 @@
             if(currentIcon) {
                 currentIcon.className = dir === "asc" ? "fas fa-sort-up text-white ms-1" : "fas fa-sort-down text-white ms-1";
             }
+        }
+
+        // =========================================================
+        // FITUR TABEL SUARA (LOG ENTRI)
+        // =========================================================
+        function fetchLogSuara() {
+            const webAppUrl = localStorage.getItem('GAS_WEBAPP_URL') || safeGetValue('config-url-webapp');
+            const tbody = document.getElementById('tbody-data-suara');
+            if(!webAppUrl || webAppUrl.trim() === '') {
+                tbody.innerHTML = '<tr><td colspan="8" class="text-muted text-center">URL Web App belum diatur.</td></tr>';
+                return;
+            }
+
+            showLoading(true, "Memuat Tabel Suara...");
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center"><div class="spinner-border text-primary spinner-border-sm"></div> Memuat...</td></tr>';
+
+            fetch(webAppUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ action: 'getLogSuara' })
+            })
+            .then(res => res.json())
+            .then(response => {
+                showLoading(false);
+                if(response.status === 'success' && response.data) {
+                    window.logSuaraData = response.data;
+                    renderTabelSuara();
+                } else {
+                    // Fallback menggunakan state lokal bila endpoint GAS belum menyediakan getLogSuara
+                    if(window.localLogSuara && window.localLogSuara.length > 0) {
+                        window.logSuaraData = window.localLogSuara;
+                        renderTabelSuara();
+                    } else {
+                        tbody.innerHTML = '<tr><td colspan="8" class="text-muted text-center">Data kosong atau belum ada entri suara.</td></tr>';
+                    }
+                }
+            })
+            .catch(err => {
+                showLoading(false);
+                if(window.localLogSuara && window.localLogSuara.length > 0) {
+                    window.logSuaraData = window.localLogSuara;
+                    renderTabelSuara();
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="8" class="text-muted text-center">Gagal memuat data dari server. Data lokal kosong.</td></tr>';
+                }
+            });
+        }
+
+        function renderTabelSuara() {
+            const tbody = document.getElementById('tbody-data-suara');
+            if(!window.logSuaraData || window.logSuaraData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="text-muted text-center">Belum ada data entri suara.</td></tr>';
+                return;
+            }
+
+            // Urutkan berdasarkan Dapil lalu TPS
+            window.logSuaraData.sort((a, b) => {
+                const dapilCmp = (a.dapil || '').localeCompare(b.dapil || '');
+                if (dapilCmp !== 0) return dapilCmp;
+                return (a.tps || '').localeCompare(b.tps || '', undefined, {numeric: true});
+            });
+
+            tbody.innerHTML = '';
+            window.logSuaraData.forEach((row, idx) => {
+                const rowId = 'log-' + idx;
+                
+                // Susun hierarki Partai & Caleg di dalam Detail Expand
+                let detailHtml = `<div class="p-2 bg-white rounded border shadow-sm" style="max-height: 250px; overflow-y: auto;">`;
+                
+                if (window.masterPartaiList && window.masterPartaiList.length > 0) {
+                    window.masterPartaiList.forEach(mp => {
+                        const pNama = String(mp[1]).trim();
+                        const suaraP = (row.suara_partai && row.suara_partai[pNama]) ? parseInt(row.suara_partai[pNama]) : 0;
+                        
+                        let calegPartaiIni = [];
+                        if (window.masterCalegDprList) {
+                            calegPartaiIni = window.masterCalegDprList.filter(mc => String(mc[3]).trim() === pNama && String(mc[2]).trim() === row.dapil);
+                        }
+
+                        // Tampilkan hanya jika ada partai/caleg yang memiliki suara (atau jika mau semuanya tampil, hapus kondisi ini)
+                        const hasCalegVotes = calegPartaiIni.some(c => (row.suara_caleg_dpr && row.suara_caleg_dpr[c[1]]) > 0);
+                        if(suaraP > 0 || hasCalegVotes || true) { // Default tampilkan semua yg ada di form form
+                            detailHtml += `<div class="fw-bold text-white bg-primary px-2 py-1 mt-2 mb-1 rounded" style="font-size: 0.9rem;">${pNama} <span class="float-end">Suara Partai: ${suaraP}</span></div>`;
+                            
+                            calegPartaiIni.sort((a,b) => a[0] - b[0]).forEach(c => {
+                                const cNama = c[1];
+                                const suaraC = (row.suara_caleg_dpr && row.suara_caleg_dpr[cNama]) ? parseInt(row.suara_caleg_dpr[cNama]) : 0;
+                                detailHtml += `<div class="d-flex justify-content-between text-dark ps-3 border-bottom border-light py-1" style="font-size:0.85rem;">
+                                    <span>${c[0]}. ${cNama}</span>
+                                    <span class="fw-semibold">${suaraC}</span>
+                                </div>`;
+                            });
+                        }
+                    });
+                } else {
+                    detailHtml += `<div class="text-muted p-2">Master Partai Kosong. Data tidak dapat disusun berjenjang.</div>`;
+                }
+                detailHtml += `</div>`;
+
+                const tr = document.createElement('tr');
+                tr.className = "text-center";
+                tr.innerHTML = `
+                    <td class="check-col"><input class="form-check-input row-check log-check" type="checkbox" value="${idx}"></td>
+                    <td class="fw-bold text-uppercase">${row.dapil || '-'}</td>
+                    <td>${row.kabupaten || '-'}</td>
+                    <td>${row.kecamatan || '-'}</td>
+                    <td>${row.kelurahan || '-'}</td>
+                    <td class="fw-bold text-primary">TPS ${row.tps || '-'}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-info fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#detail-${rowId}">
+                            <i class="fas fa-eye me-1"></i> Lihat Urutan
+                        </button>
+                    </td>
+                    <td class="aksi-col text-nowrap">
+                        <button class="btn btn-sm btn-warning me-1" onclick="editLogSuara('${encodeURIComponent(JSON.stringify(row))}')" title="Edit Data ini"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-sm btn-danger" onclick="hapusLogSuara(${idx})" title="Hapus"><i class="fas fa-trash"></i></button>
+                    </td>
+                `;
+                
+                // Format Tanggal
+                let tgl = '-';
+                if(row.timestamp) {
+                    const d = new Date(row.timestamp);
+                    tgl = isNaN(d.getTime()) ? row.timestamp : d.toLocaleString('id-ID');
+                }
+
+                const trDetail = document.createElement('tr');
+                trDetail.className = "collapse";
+                trDetail.style.backgroundColor = "#f8fafc";
+                trDetail.id = `detail-${rowId}`;
+                trDetail.innerHTML = `
+                    <td colspan="8" class="text-start p-3 border-bottom shadow-inner">
+                        <div class="row align-items-start">
+                            <div class="col-md-4">
+                                <div class="bg-white p-3 rounded border shadow-sm h-100">
+                                    <h6 class="fw-bold text-secondary border-bottom pb-2"><i class="fas fa-info-circle me-1"></i> Ringkasan TPS</h6>
+                                    <div class="mb-2 mt-3 fs-6"><strong>Total DPT:</strong> <span class="float-end fw-bold">${row.dpt || 0}</span></div>
+                                    <div class="mb-2 fs-6 text-success"><strong>Suara Sah:</strong> <span class="float-end fw-bold">${row.sah || 0}</span></div>
+                                    <div class="mb-2 fs-6 text-danger"><strong>Tidak Sah:</strong> <span class="float-end fw-bold">${row.suara_tidak_sah || 0}</span></div>
+                                    <hr>
+                                    <div class="text-muted small"><i class="fas fa-clock me-1"></i>Waktu Entri: <br>${tgl}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-8">
+                                ${detailHtml}
+                            </div>
+                        </div>
+                    </td>
+                `;
+                
+                tbody.appendChild(tr);
+                tbody.appendChild(trDetail);
+            });
+        }
+
+        function hapusLogSuara(idx) {
+            if(confirm('Yakin ingin menghapus data entri TPS ini?')) {
+                const rowData = window.logSuaraData[idx];
+                prosesHapusLogServer([rowData]);
+            }
+        }
+
+        function hapusTerpilihLog() {
+            const checkboxes = document.querySelectorAll('.log-check:checked');
+            if(checkboxes.length === 0) {
+                alert("Pilih setidaknya satu baris.");
+                return;
+            }
+            if(confirm(`Yakin ingin menghapus ${checkboxes.length} entri TPS secara permanen?`)) {
+                let rowsToDelete = [];
+                checkboxes.forEach(cb => {
+                    rowsToDelete.push(window.logSuaraData[cb.value]);
+                });
+                prosesHapusLogServer(rowsToDelete);
+            }
+        }
+
+        function prosesHapusLogServer(dataArray) {
+            const webAppUrl = localStorage.getItem('GAS_WEBAPP_URL');
+            if(!webAppUrl) return;
+
+            showLoading(true, "Menghapus Data Suara...");
+            fetch(webAppUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ action: 'deleteLogSuara', data: dataArray })
+            })
+            .then(res => res.json())
+            .then(response => {
+                showLoading(false);
+                if(window.localLogSuara) {
+                    dataArray.forEach(delItem => {
+                        window.localLogSuara = window.localLogSuara.filter(item => !(item.dapil === delItem.dapil && item.tps === delItem.tps && item.kecamatan === delItem.kecamatan && item.kelurahan === delItem.kelurahan));
+                    });
+                }
+                alert("Data entri TPS berhasil dihapus.");
+                fetchLogSuara();
+                syncDataManual(); 
+            })
+            .catch(err => {
+                showLoading(false);
+                // Fallback delete lokal jika server gagal (CORS/endpoint blm siap)
+                if(window.localLogSuara) {
+                    dataArray.forEach(delItem => {
+                        window.localLogSuara = window.localLogSuara.filter(item => !(item.dapil === delItem.dapil && item.tps === delItem.tps && item.kecamatan === delItem.kecamatan && item.kelurahan === delItem.kelurahan));
+                    });
+                    alert("Data dihapus secara lokal (Server fallback/Error).");
+                    fetchLogSuara();
+                }
+            });
+        }
+
+        function editLogSuara(encodedData) {
+            const row = JSON.parse(decodeURIComponent(encodedData));
+            
+            // 1. Simpan Kunci Asli untuk Mode Edit
+            window.editingLogKey = {
+                dapil: row.dapil,
+                kabupaten: row.kabupaten,
+                kecamatan: row.kecamatan,
+                kelurahan: row.kelurahan,
+                tps: row.tps
+            };
+
+            // Tampilkan Badge Edit Mode
+            const badgeEdit = document.getElementById('badge-edit-mode');
+            if(badgeEdit) badgeEdit.classList.remove('d-none');
+
+            // 2. Pindah ke Tab Entri Data
+            const entriTabBtn = document.getElementById('entri-data-tab');
+            if(entriTabBtn) {
+                const tab = new bootstrap.Tab(entriTabBtn);
+                tab.show();
+            }
+
+            // 3. Set dropdown hierarchy (delay berjenjang agar trigger jalan)
+            const dapilSelect = document.getElementById('select-dapil');
+            if(dapilSelect) {
+                dapilSelect.value = row.dapil;
+                dapilSelect.dispatchEvent(new Event('change'));
+            }
+            setTimeout(() => {
+                const kabSelect = document.getElementById('select-kab');
+                if(kabSelect) {
+                    kabSelect.value = row.kabupaten;
+                    kabSelect.dispatchEvent(new Event('change'));
+                }
+                setTimeout(() => {
+                    const kecSelect = document.getElementById('select-kec');
+                    if(kecSelect) {
+                        kecSelect.value = row.kecamatan;
+                        kecSelect.dispatchEvent(new Event('change'));
+                    }
+                    setTimeout(() => {
+                        const kelSelect = document.getElementById('select-kel');
+                        if(kelSelect) {
+                            kelSelect.value = row.kelurahan;
+                            kelSelect.dispatchEvent(new Event('change'));
+                        }
+                        setTimeout(() => {
+                            const tpsSelect = document.getElementById('select-tps');
+                            if(tpsSelect) {
+                                tpsSelect.value = row.tps;
+                                tpsSelect.dispatchEvent(new Event('change'));
+                            }
+
+                            // 4. Set nilai Input Suara
+                            document.getElementById('input-dpt').value = row.dpt || 0;
+                            document.getElementById('input-suara-tidak-sah').value = row.suara_tidak_sah || 0;
+                            
+                            Object.keys(row.suara_partai || {}).forEach(p => {
+                                const el = document.querySelector(`.input-partai[data-partai="${p}"]`);
+                                if(el) el.value = row.suara_partai[p];
+                            });
+                            Object.keys(row.suara_caleg_dpr || {}).forEach(c => {
+                                const el = document.querySelector(`.input-caleg-dpr[data-caleg="${c}"]`);
+                                if(el) el.value = row.suara_caleg_dpr[c];
+                            });
+                            
+                            hitungTotalSah();
+
+                            alert("Data TPS berhasil dimuat ke Form Entri.\nSilakan lakukan perubahan dan klik 'Simpan Data Suara' untuk menimpa/memperbarui data.");
+                            document.getElementById('dynamic-entri-form').scrollIntoView({behavior: "smooth", block: "start"});
+                            
+                        }, 50);
+                    }, 50);
+                }, 50);
+            }, 50);
         }
 
         window.addEventListener('load', function() {
