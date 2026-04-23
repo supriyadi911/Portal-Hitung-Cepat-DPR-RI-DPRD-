@@ -152,14 +152,13 @@
             100% { transform: translate3d(-100%, 0, 0); }
         }
 
-        /* Custom Nav Pills untuk Menu Utama */
+        /* Desktop: Custom Nav Pills */
         .custom-pills .nav-link {
             color: #64748b;
             border-radius: 8px;
             padding: 10px 20px;
             transition: all 0.3s;
             background-color: #e2e8f0;
-            margin-right: 10px;
             border: 1px solid transparent;
         }
         .custom-pills .nav-link:hover {
@@ -173,6 +172,102 @@
         }
         .cursor-pointer {
             cursor: pointer;
+        }
+
+        .btn-sync-mobile { display: none; }
+
+        /* ========================================================
+           RESPONSIVE MOBILE CSS (Tampilan HP / Bottom Nav)
+           ======================================================== */
+        @media (max-width: 767.98px) {
+            body { 
+                padding-bottom: 75px; 
+            }
+            
+            /* Navbar Header Mobile */
+            .navbar-brand img { height: 28px !important; }
+            .navbar-brand span { font-size: 0.9rem !important; }
+            .navbar-brand span:last-child { font-size: 0.7rem !important; }
+            
+            /* Typography & Cards Mobile */
+            .stat-value { font-size: 1.15rem; }
+            .stat-title { font-size: 0.65rem; }
+            h4 { font-size: 1.15rem; }
+            h5 { font-size: 1.05rem; }
+            h6 { font-size: 0.95rem; }
+            .card-header-custom { font-size: 0.9rem; padding: 12px 15px; }
+            .table td, .table th { font-size: 0.75rem; padding: 0.4rem; }
+            .badge { font-size: 0.65rem; }
+            .ticker-text { font-size: 0.75rem; }
+            .btn-sm { font-size: 0.75rem; padding: 0.25rem 0.5rem; }
+            .tab-content.p-4 { padding: 12px !important; }
+
+            /* Scroll Nav Tabs Horisontal (Swipe) */
+            .nav-tabs {
+                display: flex;
+                flex-wrap: nowrap;
+                overflow-x: auto;
+                overflow-y: hidden;
+                -webkit-overflow-scrolling: touch;
+                border-bottom: 2px solid #e2e8f0;
+            }
+            .nav-tabs::-webkit-scrollbar { display: none; }
+            .nav-tabs .nav-item { white-space: nowrap; }
+            .nav-tabs .nav-link { padding: 8px 12px; font-size: 0.85rem; }
+
+            /* BOTTOM NAVIGATION MOBILE APP STYLE */
+            .main-nav-container {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                width: 100%;
+                background-color: #ffffff;
+                box-shadow: 0 -4px 15px rgba(0,0,0,0.08);
+                z-index: 1050;
+                margin: 0 !important;
+                padding: 0 !important;
+                padding-bottom: env(safe-area-inset-bottom, 0) !important;
+                border-top: 1px solid #e2e8f0;
+            }
+            .custom-pills {
+                display: flex !important;
+                width: 100% !important;
+                padding: 5px 0 !important;
+                margin: 0 !important;
+                background-color: transparent !important;
+            }
+            .custom-pills .nav-item {
+                flex: 1;
+            }
+            .custom-pills .nav-link {
+                display: flex !important;
+                flex-direction: column !important;
+                align-items: center !important;
+                justify-content: center !important;
+                background-color: transparent !important;
+                color: #94a3b8 !important;
+                font-size: 0.7rem !important;
+                padding: 6px 0 !important;
+                margin: 0 !important;
+                box-shadow: none !important;
+                border: none !important;
+                border-radius: 0 !important;
+                width: 100%;
+            }
+            .custom-pills .nav-link i {
+                font-size: 1.3rem !important;
+                margin-bottom: 4px !important;
+                margin-right: 0 !important;
+            }
+            .custom-pills .nav-link.active {
+                color: #3b82f6 !important;
+            }
+            .custom-pills .nav-link.active i {
+                color: #3b82f6 !important;
+            }
+            .btn-sync-mobile {
+                display: block !important;
+            }
         }
     </style>
 </head>
@@ -222,25 +317,36 @@
         </div>
     </header>
 
-    <!-- NAVIGASI UTAMA -->
-    <div class="container-fluid mt-4 mb-3">
-        <div class="d-flex flex-wrap justify-content-between align-items-center mx-1 gap-3">
-            <ul class="nav nav-pills custom-pills m-0" id="mainTab" role="tablist">
+    <!-- NAVIGASI UTAMA (Responsif: Desktop Top, Mobile Bottom Sticky) -->
+    <div class="main-nav-container container-fluid mt-md-4 mb-md-3 mt-0 mb-0">
+        <div class="d-flex flex-wrap justify-content-between align-items-center mx-md-1 gap-3">
+            
+            <ul class="nav nav-pills custom-pills m-0 flex-grow-1 flex-md-grow-0 gap-md-2" id="mainTab" role="tablist">
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link active fw-bold" id="dashboard-tab" data-bs-toggle="tab" data-bs-target="#dashboard-view" type="button" role="tab">
-                        <i class="fas fa-chart-line me-2"></i>Dashboard Hasil
+                    <button class="nav-link active fw-bold w-100" id="dashboard-tab" data-bs-toggle="tab" data-bs-target="#dashboard-view" type="button" role="tab">
+                        <i class="fas fa-chart-line me-md-2"></i><span class="nav-text">Dashboard</span>
                     </button>
                 </li>
+                
+                <!-- Tombol Sinkron Khusus Mobile (Tengah) -->
+                <li class="nav-item btn-sync-mobile" role="presentation">
+                    <button class="nav-link fw-bold w-100" type="button" onclick="syncDataManual()">
+                        <i class="fas fa-sync-alt" id="icon-sync-manual-mobile"></i><span class="nav-text">Sinkron</span>
+                    </button>
+                </li>
+
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link fw-bold" id="data-tab" data-bs-toggle="tab" data-bs-target="#data-view" type="button" role="tab">
-                        <i class="fas fa-database me-2"></i>Manajemen Data
+                    <button class="nav-link fw-bold w-100" id="data-tab" data-bs-toggle="tab" data-bs-target="#data-view" type="button" role="tab">
+                        <i class="fas fa-database me-md-2"></i><span class="nav-text">Manajemen</span>
                     </button>
                 </li>
             </ul>
             
-            <button class="btn btn-primary fw-bold shadow-sm" onclick="syncDataManual()">
-                <i class="fas fa-sync-alt me-1" id="icon-sync-manual"></i> Sinkron ke Database
+            <!-- Tombol Sinkron Khusus Desktop (Kanan) -->
+            <button class="btn btn-primary fw-bold shadow-sm btn-sync-desktop d-none d-md-block" onclick="syncDataManual()">
+                <i class="fas fa-sync-alt me-1" id="icon-sync-manual-desktop"></i> Sinkron ke Database
             </button>
+
         </div>
     </div>
 
@@ -261,9 +367,12 @@
                     </li>
                 </ul>
 
-                <!-- Konten Sub-Dashboard -->
-                <div class="tab-content p-4" id="myTabContent" style="background: white; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 10px 10px;">
+                <!-- Konten Sub-Dashboard (min-height ditambahkan agar layout stabil saat load) -->
+                <div class="tab-content p-md-4 p-3" id="myTabContent" style="background: white; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 10px 10px; min-height: 60vh;">
                     
+                    <!-- Placeholder dihapus dari visual agar bersih dan stabil -->
+                    <div id="loading-panes-placeholder"></div>
+
                     <!-- TAB 2: SEBARAN DAPIL -->
                     <div class="tab-pane fade" id="dapil" role="tabpanel">
                         <div class="card card-custom mb-4">
@@ -292,11 +401,11 @@
                                     <div class="card-body">
                                         <form id="form-config">
                                             <div class="mb-3">
-                                                <label class="form-label">Judul Dashboard</label>
+                                                <label class="form-label fw-semibold">Judul Dashboard</label>
                                                 <input type="text" class="form-control" id="config-judul-dashboard" value="Quick Count Pro 2026">
                                             </div>
                                             <div class="mb-3">
-                                                <label class="form-label">Running Text (Info Bergerak)</label>
+                                                <label class="form-label fw-semibold">Running Text (Info Bergerak)</label>
                                                 <input type="text" class="form-control" id="config-running-text" value="Selamat datang di Dashboard Quick Count Profesional. Data terbaru dari seluruh wilayah sedang disinkronisasikan...">
                                             </div>
                                             <div class="mb-4">
@@ -330,7 +439,7 @@
                     <div class="card-body">
                         
                         <!-- Sub-Navigasi Data -->
-                        <ul class="nav nav-tabs mb-4" id="dataSubTab" role="tablist">
+                        <ul class="nav nav-tabs mb-4 flex-nowrap" id="dataSubTab" role="tablist">
                             <li class="nav-item" role="presentation">
                                 <button class="nav-link active" id="setting-wilayah-tab" data-bs-toggle="tab" data-bs-target="#setting-wilayah" type="button" role="tab"><i class="fas fa-map-marked-alt me-2"></i>Wilayah & TPS</button>
                             </li>
@@ -352,15 +461,15 @@
                             
                             <!-- MENU 1: SETTING WILAYAH -->
                             <div class="tab-pane fade show active" id="setting-wilayah" role="tabpanel">
-                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3 gap-2">
                                     <h6 class="mb-0 fw-bold text-primary"><i class="fas fa-map-marker-alt me-2"></i>Daftar Titik Sampel TPS - DPR RI</h6>
                                     <div class="btn-group">
-                                        <button class="btn btn-danger btn-sm fw-bold border border-light" onclick="hapusTerpilih('tbody-wilayah', 'wilayah')"><i class="fas fa-trash-alt me-1"></i> Hapus Terpilih</button>
-                                        <button class="btn btn-primary btn-sm fw-bold" onclick="simpanDataMaster('wilayah')"><i class="fas fa-save me-1"></i> Simpan</button>
-                                        <button class="btn btn-info btn-sm text-white fw-bold" onclick="tambahBarisManual('tbody-wilayah', 'wilayah')"><i class="fas fa-plus me-1"></i> Tambah Manual</button>
-                                        <button class="btn btn-success btn-sm" onclick="exportTableToExcel('tabel-wilayah', 'Template_Wilayah_TPS')"><i class="fas fa-file-excel me-1"></i> Export Template</button>
+                                        <button class="btn btn-danger btn-sm fw-bold border border-light" onclick="hapusTerpilih('tbody-wilayah', 'wilayah')"><i class="fas fa-trash-alt me-1"></i> <span class="d-none d-md-inline">Hapus</span></button>
+                                        <button class="btn btn-primary btn-sm fw-bold" onclick="simpanDataMaster('wilayah')"><i class="fas fa-save me-1"></i> <span class="d-none d-md-inline">Simpan</span></button>
+                                        <button class="btn btn-info btn-sm text-white fw-bold" onclick="tambahBarisManual('tbody-wilayah', 'wilayah')"><i class="fas fa-plus me-1"></i> <span class="d-none d-md-inline">Tambah</span></button>
+                                        <button class="btn btn-success btn-sm" onclick="exportTableToExcel('tabel-wilayah', 'Template_Wilayah_TPS')"><i class="fas fa-file-excel me-1"></i> <span class="d-none d-md-inline">Export</span></button>
                                         <label class="btn btn-dark btn-sm mb-0 cursor-pointer">
-                                            <i class="fas fa-upload me-1"></i> Import Excel
+                                            <i class="fas fa-upload me-1"></i> <span class="d-none d-md-inline">Import</span>
                                             <input type="file" accept=".xlsx, .xls" class="d-none" onchange="importExcelToTable(event, 'tbody-wilayah', 'wilayah')">
                                         </label>
                                     </div>
@@ -389,15 +498,15 @@
 
                             <!-- MENU 2: MASTER PARTAI -->
                             <div class="tab-pane fade" id="master-partai" role="tabpanel">
-                                <div class="d-flex justify-content-between align-items-center mb-3">
-                                    <h5 class="mb-0 fw-bold text-dark">Daftar Nama Partai & Logo</h5>
+                                <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3 gap-2">
+                                    <h6 class="mb-0 fw-bold text-dark"><i class="fas fa-flag me-2"></i>Daftar Nama Partai & Logo</h6>
                                     <div class="btn-group">
-                                        <button class="btn btn-danger btn-sm fw-bold border border-light" onclick="hapusTerpilih('tbody-partai', 'partai')"><i class="fas fa-trash-alt me-1"></i> Hapus Terpilih</button>
-                                        <button class="btn btn-primary btn-sm fw-bold" onclick="simpanDataMaster('partai')"><i class="fas fa-save me-1"></i> Simpan</button>
-                                        <button class="btn btn-info btn-sm text-white fw-bold" onclick="tambahBarisManual('tbody-partai', 'partai')"><i class="fas fa-plus me-1"></i> Tambah Manual</button>
-                                        <button class="btn btn-success btn-sm" onclick="exportTableToExcel('tabel-partai', 'Template_Master_Partai')"><i class="fas fa-file-excel me-1"></i> Export Excel</button>
+                                        <button class="btn btn-danger btn-sm fw-bold border border-light" onclick="hapusTerpilih('tbody-partai', 'partai')"><i class="fas fa-trash-alt me-1"></i> <span class="d-none d-md-inline">Hapus</span></button>
+                                        <button class="btn btn-primary btn-sm fw-bold" onclick="simpanDataMaster('partai')"><i class="fas fa-save me-1"></i> <span class="d-none d-md-inline">Simpan</span></button>
+                                        <button class="btn btn-info btn-sm text-white fw-bold" onclick="tambahBarisManual('tbody-partai', 'partai')"><i class="fas fa-plus me-1"></i> <span class="d-none d-md-inline">Tambah</span></button>
+                                        <button class="btn btn-success btn-sm" onclick="exportTableToExcel('tabel-partai', 'Template_Master_Partai')"><i class="fas fa-file-excel me-1"></i> <span class="d-none d-md-inline">Export</span></button>
                                         <label class="btn btn-dark btn-sm mb-0 cursor-pointer">
-                                            <i class="fas fa-upload me-1"></i> Import Excel
+                                            <i class="fas fa-upload me-1"></i> <span class="d-none d-md-inline">Import</span>
                                             <input type="file" accept=".xlsx, .xls" class="d-none" onchange="importExcelToTable(event, 'tbody-partai', 'partai')">
                                         </label>
                                     </div>
@@ -423,15 +532,15 @@
 
                             <!-- MENU 3: MASTER CALEG DPR RI -->
                             <div class="tab-pane fade" id="master-caleg-dpr" role="tabpanel">
-                                <div class="d-flex justify-content-between align-items-center mb-3">
-                                    <h5 class="mb-0 fw-bold text-dark">Daftar Caleg DPR RI</h5>
+                                <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3 gap-2">
+                                    <h6 class="mb-0 fw-bold text-dark"><i class="fas fa-user-tie me-2"></i>Daftar Caleg DPR RI</h6>
                                     <div class="btn-group">
-                                        <button class="btn btn-danger btn-sm fw-bold border border-light" onclick="hapusTerpilih('tbody-caleg-dpr', 'caleg_dpr')"><i class="fas fa-trash-alt me-1"></i> Hapus Terpilih</button>
-                                        <button class="btn btn-primary btn-sm fw-bold" onclick="simpanDataMaster('caleg_dpr')"><i class="fas fa-save me-1"></i> Simpan</button>
-                                        <button class="btn btn-info btn-sm text-white fw-bold" onclick="tambahBarisManual('tbody-caleg-dpr', 'caleg_dpr')"><i class="fas fa-plus me-1"></i> Tambah Manual</button>
-                                        <button class="btn btn-success btn-sm" onclick="exportTableToExcel('tabel-caleg-dpr', 'Template_Caleg_DPR_RI')"><i class="fas fa-file-excel me-1"></i> Export Excel</button>
+                                        <button class="btn btn-danger btn-sm fw-bold border border-light" onclick="hapusTerpilih('tbody-caleg-dpr', 'caleg_dpr')"><i class="fas fa-trash-alt me-1"></i> <span class="d-none d-md-inline">Hapus</span></button>
+                                        <button class="btn btn-primary btn-sm fw-bold" onclick="simpanDataMaster('caleg_dpr')"><i class="fas fa-save me-1"></i> <span class="d-none d-md-inline">Simpan</span></button>
+                                        <button class="btn btn-info btn-sm text-white fw-bold" onclick="tambahBarisManual('tbody-caleg-dpr', 'caleg_dpr')"><i class="fas fa-plus me-1"></i> <span class="d-none d-md-inline">Tambah</span></button>
+                                        <button class="btn btn-success btn-sm" onclick="exportTableToExcel('tabel-caleg-dpr', 'Template_Caleg_DPR_RI')"><i class="fas fa-file-excel me-1"></i> <span class="d-none d-md-inline">Export</span></button>
                                         <label class="btn btn-dark btn-sm mb-0 cursor-pointer">
-                                            <i class="fas fa-upload me-1"></i> Import Excel
+                                            <i class="fas fa-upload me-1"></i> <span class="d-none d-md-inline">Import</span>
                                             <input type="file" accept=".xlsx, .xls" class="d-none" onchange="importExcelToTable(event, 'tbody-caleg-dpr', 'caleg_dpr')">
                                         </label>
                                     </div>
@@ -457,40 +566,40 @@
 
                             <!-- MENU 4: ENTRI DATA SUARA -->
                             <div class="tab-pane fade" id="entri-data" role="tabpanel">
-                                <div class="p-3 mb-4 rounded" style="background-color: #f1f5f9; border: 1px solid #cbd5e1;">
+                                <div class="p-md-3 p-2 mb-4 rounded" style="background-color: #f1f5f9; border: 1px solid #cbd5e1;">
                                     <h6 class="text-primary fw-bold mb-3"><i class="fas fa-search-location me-2"></i>Pilih Titik Sampel TPS</h6>
                                     <div class="row g-2">
-                                        <div class="col">
+                                        <div class="col-6 col-md">
                                             <select class="form-select form-select-sm" id="select-dapil">
                                                 <option value="">-- Pilih Dapil --</option>
                                             </select>
                                         </div>
-                                        <div class="col">
+                                        <div class="col-6 col-md">
                                             <select class="form-select form-select-sm" id="select-kab">
-                                                <option value="">-- Pilih Kab/Kota --</option>
+                                                <option value="">-- Kab/Kota --</option>
                                             </select>
                                         </div>
-                                        <div class="col">
+                                        <div class="col-6 col-md">
                                             <select class="form-select form-select-sm" id="select-kec">
-                                                <option value="">-- Pilih Kecamatan --</option>
+                                                <option value="">-- Kecamatan --</option>
                                             </select>
                                         </div>
-                                        <div class="col">
+                                        <div class="col-6 col-md">
                                             <select class="form-select form-select-sm" id="select-kel">
-                                                <option value="">-- Pilih Kel/Desa --</option>
+                                                <option value="">-- Kel/Desa --</option>
                                             </select>
                                         </div>
-                                        <div class="col">
-                                            <select class="form-select form-select-sm" id="select-tps">
-                                                <option value="">-- Pilih No TPS --</option>
+                                        <div class="col-12 col-md">
+                                            <select class="form-select form-select-sm border-primary fw-bold text-primary" id="select-tps">
+                                                <option value="">-- No TPS --</option>
                                             </select>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div class="p-3 rounded" style="background-color: #f8fafc; border: 1px solid #e2e8f0;">
-                                    <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
-                                        <h6 class="mb-0 fw-bold text-dark">Form Entri Suara (Berdasarkan Partai & Caleg)</h6>
+                                <div class="p-md-3 p-2 rounded" style="background-color: #f8fafc; border: 1px solid #e2e8f0;">
+                                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center border-bottom pb-2 mb-3 gap-2">
+                                        <h6 class="mb-0 fw-bold text-dark"><i class="fas fa-edit me-1"></i> Form Entri Suara</h6>
                                         <span id="badge-edit-mode" class="badge bg-warning text-dark d-none px-2 py-1 shadow-sm"><i class="fas fa-pen me-1"></i> Mode Edit Aktif</span>
                                     </div>
                                     
@@ -500,7 +609,7 @@
                                     
                                     <hr class="my-4 border-secondary">
                                     
-                                    <div id="warning-dpt" class="alert alert-danger d-none fw-bold shadow-sm" role="alert">
+                                    <div id="warning-dpt" class="alert alert-danger d-none fw-bold shadow-sm" role="alert" style="font-size: 0.85rem;">
                                         <i class="fas fa-exclamation-triangle me-2"></i> PERINGATAN: Total Suara (Sah + Tidak Sah) melebihi jumlah DPT!
                                     </div>
                                     
@@ -520,19 +629,19 @@
                                     </div>
                                 </div>
 
-                                <div class="mt-4 text-end">
-                                    <button class="btn btn-warning me-2" onclick="resetEntriForm()"><i class="fas fa-undo me-1"></i> Reset</button>
-                                    <button class="btn btn-primary" onclick="submitEntriData()"><i class="fas fa-save me-1"></i> Simpan Data Suara</button>
+                                <div class="mt-4 text-end d-flex flex-column flex-md-row justify-content-end gap-2">
+                                    <button class="btn btn-warning fw-bold" onclick="resetEntriForm()"><i class="fas fa-undo me-1"></i> Reset</button>
+                                    <button class="btn btn-primary fw-bold px-4" onclick="submitEntriData()"><i class="fas fa-save me-1"></i> Simpan Data Suara</button>
                                 </div>
 
                             </div>
 
                             <!-- MENU 5: TABEL SUARA -->
                             <div class="tab-pane fade" id="tabel-suara" role="tabpanel">
-                                <div class="d-flex justify-content-between align-items-center mb-3">
-                                    <h5 class="mb-0 fw-bold text-dark">Data Entri Suara (Log TPS)</h5>
+                                <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3 gap-2">
+                                    <h6 class="mb-0 fw-bold text-dark"><i class="fas fa-list-ul me-2"></i>Data Entri Suara (Log TPS)</h6>
                                     <div class="btn-group">
-                                        <button class="btn btn-danger btn-sm fw-bold border border-light" onclick="hapusTerpilihLog()"><i class="fas fa-trash-alt me-1"></i> Hapus Terpilih</button>
+                                        <button class="btn btn-danger btn-sm fw-bold border border-light" onclick="hapusTerpilihLog()"><i class="fas fa-trash-alt me-1"></i> <span class="d-none d-md-inline">Hapus</span></button>
                                         <button class="btn btn-primary btn-sm fw-bold" onclick="fetchLogSuara()"><i class="fas fa-sync-alt me-1"></i> Muat Data</button>
                                     </div>
                                 </div>
@@ -577,13 +686,16 @@
         window.appSettings = {}; 
         window.localLogSuara = []; 
         window.logSuaraData = [];
-        window.editingLogKey = null; // Menyimpan kunci data asli saat mode edit
+        window.editingLogKey = null; 
 
         document.addEventListener("DOMContentLoaded", () => {
-            loadData();
+            // Langsung sinkronisasi otomatis saat aplikasi pertama kali dimuat
+            syncDataManual();
+            
             document.addEventListener('fullscreenchange', () => {
+                const btnDesk = document.getElementById('btn-fullscreen');
                 if (!document.fullscreenElement) {
-                    document.getElementById('btn-fullscreen').innerHTML = '<i class="fas fa-expand"></i>';
+                    if(btnDesk) btnDesk.innerHTML = '<i class="fas fa-expand"></i>';
                 }
             });
         });
@@ -607,20 +719,23 @@
             if (!window.masterPartaiList || window.masterPartaiList.length === 0) return '';
             const p = window.masterPartaiList.find(x => x[1] && x[1].toString().trim().toLowerCase() === partaiName.toString().trim().toLowerCase());
             if (p && p[2]) {
-                return `<img src="${p[2]}" alt="${partaiName}" style="height: 26px; width: 26px; object-fit: contain; margin-right: 8px; vertical-align: middle;" onerror="this.style.display='none'">`;
+                return `<img src="${p[2]}" alt="${partaiName}" style="height: 24px; width: 24px; object-fit: contain; margin-right: 6px; vertical-align: middle;" onerror="this.style.display='none'">`;
             }
             return '';
         }
 
         function syncDataManual() {
-            const icon = document.getElementById('icon-sync-manual');
-            if(icon) icon.classList.add('fa-spin');
+            const iconM = document.getElementById('icon-sync-manual-mobile');
+            const iconD = document.getElementById('icon-sync-manual-desktop');
+            if(iconM) iconM.classList.add('fa-spin');
+            if(iconD) iconD.classList.add('fa-spin');
             
             loadMasterData();
             loadData();
 
             setTimeout(() => {
-                if(icon) icon.classList.remove('fa-spin');
+                if(iconM) iconM.classList.remove('fa-spin');
+                if(iconD) iconD.classList.remove('fa-spin');
             }, 1500); 
         }
 
@@ -704,11 +819,9 @@
         function processData(data) {
             window.electionData = data;
             
-            // FILTER HANYA DAPIL YANG AKTIF DI MASTER WILAYAH
-            const activeDapils = getDapilList().sort(); // Jadikan activeDapils sebagai acuan utama
+            const activeDapils = getDapilList().sort(); 
             const dapils = activeDapils;
             
-            // Hitung total TPS target langsung dari tabel Wilayah Frontend agar 100% akurat
             const wilayahRows = document.querySelectorAll('#tbody-wilayah tr');
             let targetTpsPerDapilFE = {};
             wilayahRows.forEach(row => {
@@ -723,7 +836,6 @@
             const existingDynamicTabs = document.querySelectorAll('.dynamic-dapil-tab');
             const existingDynamicPanes = document.querySelectorAll('.dynamic-dapil-pane');
 
-            // Tangani jika dapils kosong setelah filter atau memang kosong
             if (dapils.length === 0) {
                 existingDynamicTabs.forEach(t => t.remove());
                 existingDynamicPanes.forEach(p => p.remove());
@@ -735,16 +847,19 @@
                 const theadDapilDpr = document.querySelector('#dapil-table-dpr thead');
                 if(tbodyDapilDpr) tbodyDapilDpr.innerHTML = '<tr><td colspan="100%" class="text-center text-muted">Data kosong</td></tr>';
                 if(theadDapilDpr) theadDapilDpr.innerHTML = '<tr><th>Wilayah (Dapil & Kec)</th></tr>';
+                
+                const placeholder = document.getElementById('loading-panes-placeholder');
+                if (placeholder) {
+                    placeholder.innerHTML = '<div class="text-center p-4"><i class="fas fa-exclamation-circle text-warning fa-3x mb-3"></i><h5 class="fw-bold text-secondary">Belum Ada Data Dapil</h5><p class="text-muted">Silakan tambahkan data Wilayah & TPS di menu Manajemen Data.</p></div>';
+                }
                 return;
             }
 
-            // Check if dapil arrays are identical
             const existingDapilIds = Array.from(existingDynamicTabs).map(t => t.querySelector('button').id.replace('tab-', ''));
             const newDapilIds = dapils.map(d => d.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase());
             const isIdentical = existingDapilIds.length === newDapilIds.length && existingDapilIds.every((val, index) => val === newDapilIds[index]);
 
             if (!isIdentical) {
-                // PERBAIKAN: Ambil state active tab sebelum direkonstruksi
                 let activeTarget = null;
                 const activeNav = document.querySelector('#myTab .nav-link.active');
                 if (activeNav) {
@@ -757,6 +872,10 @@
                 const liDapilTab = document.getElementById('li-dapil-tab');
                 const ulMyTab = document.getElementById('myTab');
                 const myTabContent = document.getElementById('myTabContent');
+                const dapilPane = document.getElementById('dapil'); 
+                const placeholder = document.getElementById('loading-panes-placeholder');
+                
+                if (placeholder) placeholder.remove(); 
                 
                 let isAnyDynamicActivated = false;
                 const isStaticTabActive = (activeTarget === '#config' || activeTarget === '#dapil');
@@ -768,13 +887,11 @@
                     let isActive = '';
                     let isShow = '';
 
-                    // Kembalikan state aktif tab jika sebelumnya yang sedang aktif adalah tab ini
                     if (activeTarget === targetId) {
                         isActive = 'active';
                         isShow = 'show active';
                         isAnyDynamicActivated = true;
                     } 
-                    // Atur tab pertama aktif HANYA jika tab static (Konfigurasi/Dapil) sedang tidak aktif
                     else if (!isStaticTabActive && !isAnyDynamicActivated && idx === 0) {
                         isActive = 'active';
                         isShow = 'show active';
@@ -803,32 +920,32 @@
                             <span class="text-muted small">${dapilSubtitle}</span>
                         </div>
                         <div class="row">
-                            <div class="col-md-3 col-sm-6">
+                            <div class="col-md-3 col-6">
                                 <div class="stat-card">
                                     <div class="stat-title">Data Masuk</div>
-                                    <div class="stat-value" id="dpr-data-masuk-${safeId}">0%</div>
-                                    <div class="text-secondary mt-1 fw-semibold" style="font-size: 0.75rem;" id="dpr-data-masuk-detail-${safeId}">0 / 0 TPS</div>
+                                    <div class="stat-value text-primary" id="dpr-data-masuk-${safeId}">0%</div>
+                                    <div class="text-secondary mt-1 fw-semibold" style="font-size: 0.7rem;" id="dpr-data-masuk-detail-${safeId}">0 / 0 TPS</div>
                                 </div>
                             </div>
-                            <div class="col-md-3 col-sm-6">
+                            <div class="col-md-3 col-6">
                                 <div class="stat-card" style="border-left-color: #10b981;">
-                                    <div class="stat-title">Voter Turnout (VTO)</div>
-                                    <div class="stat-value" id="dpr-vto-${safeId}">0%</div>
-                                    <div class="text-secondary mt-1 fw-semibold" style="font-size: 0.75rem;">Partisipasi Pemilih</div>
+                                    <div class="stat-title">VTO</div>
+                                    <div class="stat-value text-success" id="dpr-vto-${safeId}">0%</div>
+                                    <div class="text-secondary mt-1 fw-semibold text-truncate" style="font-size: 0.7rem;">Partisipasi Pemilih</div>
                                 </div>
                             </div>
-                            <div class="col-md-3 col-sm-6">
+                            <div class="col-md-3 col-6">
                                 <div class="stat-card" style="border-left-color: #f59e0b;">
                                     <div class="stat-title">Margin of Error</div>
-                                    <div class="stat-value">± ${dapilMoe}%</div>
-                                    <div class="text-secondary mt-1 fw-semibold" style="font-size: 0.75rem;">Tingkat Galat</div>
+                                    <div class="stat-value text-warning">± ${dapilMoe}%</div>
+                                    <div class="text-secondary mt-1 fw-semibold text-truncate" style="font-size: 0.7rem;">Tingkat Galat</div>
                                 </div>
                             </div>
-                            <div class="col-md-3 col-sm-6">
+                            <div class="col-md-3 col-6">
                                 <div class="stat-card" style="border-left-color: #8b5cf6;">
                                     <div class="stat-title">Confidence Level</div>
-                                    <div class="stat-value">${dapilCl}%</div>
-                                    <div class="text-secondary mt-1 fw-semibold" style="font-size: 0.75rem;">Tingkat Kepercayaan</div>
+                                    <div class="stat-value" style="color: #8b5cf6;">${dapilCl}%</div>
+                                    <div class="text-secondary mt-1 fw-semibold text-truncate" style="font-size: 0.7rem;">Tingkat Kepercayaan</div>
                                 </div>
                             </div>
                         </div>
@@ -837,16 +954,16 @@
                             <div class="col-12">
                                 <div class="card card-custom">
                                     <div class="card-header-custom bg-light d-flex justify-content-between">
-                                        <span>🏆 Leaderboard Caleg (<span id="display-top-dpr-${safeId}">Top ${dapilTop}</span>)</span>
+                                        <span>🏆 Leaderboard (<span id="display-top-dpr-${safeId}">Top ${dapilTop}</span>)</span>
                                     </div>
                                     <div class="table-responsive pt-3">
                                         <table class="table table-sm align-middle" id="dpr-leaderboard-table-${safeId}">
                                             <thead>
                                                 <tr>
-                                                    <th class="text-center" style="width: 100px;">Peringkat</th>
+                                                    <th class="text-center" style="width: 60px;">#</th>
                                                     <th>Nama Caleg</th>
-                                                    <th>Partai</th>
-                                                    <th class="text-end">Perolehan Suara</th>
+                                                    <th class="d-none d-sm-table-cell">Partai</th>
+                                                    <th class="text-end">Suara</th>
                                                 </tr>
                                             </thead>
                                             <tbody></tbody>
@@ -866,7 +983,7 @@
                                                 <tr>
                                                     <th>No</th>
                                                     <th class="text-start">Partai</th>
-                                                    <th>Persentase & Suara</th>
+                                                    <th>Hasil Suara</th>
                                                 </tr>
                                             </thead>
                                             <tbody></tbody>
@@ -882,8 +999,8 @@
                                             <thead>
                                                 <tr>
                                                     <th>Nama Caleg</th>
-                                                    <th>Partai</th>
-                                                    <th class="text-end">Perolehan Suara</th>
+                                                    <th class="d-none d-sm-table-cell">Partai</th>
+                                                    <th class="text-end">Suara</th>
                                                 </tr>
                                             </thead>
                                             <tbody></tbody>
@@ -893,7 +1010,6 @@
                             </div>
                         </div>
                     `;
-                    // Sisipkan elemen TEPAT sebelum div id="dapil" di dalam myTabContent
                     myTabContent.insertBefore(paneDiv, document.getElementById('dapil'));
                 });
             }
@@ -903,12 +1019,9 @@
                 const sum = rawSumDapil[dapil] || { total_tps_sampel: 0, tps_masuk: 0, suara_sah: 0, suara_tidak_sah: 0, total_dpt: 0 };
                 const dapilTop = window.appSettings['TOP_' + safeId] || '5';
                 
-                // --- KALKULASI STATISTIK KARTU ATAS ---
-                // Gunakan perhitungan FE sebagai prioritas agar sesuai dengan tabel Manajemen Data
                 const totalTpsSampel = targetTpsPerDapilFE[dapil] || parseInt(sum.total_tps_sampel) || 0;
                 let tpsMasuk = parseInt(sum.tps_masuk) || 0;
                 
-                // Mencegah bug visual jika TPS masuk melebihi target (karena double entry dll)
                 if (tpsMasuk > totalTpsSampel && totalTpsSampel > 0) {
                     tpsMasuk = totalTpsSampel;
                 }
@@ -935,7 +1048,6 @@
                 safeSetText(`dpr-vto-${safeId}`, `${vto}%`);
                 safeSetText(`display-top-dpr-${safeId}`, `Top ${dapilTop}`);
 
-                // --- PENGHITUNGAN TOTAL PARTAI ---
                 let partaiDataArray = [];
                 if (window.masterPartaiList && window.masterPartaiList.length > 0) {
                     window.masterPartaiList.forEach(mp => {
@@ -962,7 +1074,6 @@
                     partaiDataArray = Object.keys(partaiDataObj).map(p => ({ nama: p, suara: partaiDataObj[p] }));
                 }
                 
-                // --- PENGHITUNGAN CALEG DAPIL ---
                 let calegDapilArray = [];
                 if (window.masterCalegDprList && window.masterCalegDprList.length > 0) {
                     const validNamesForDapil = window.masterCalegDprList
@@ -988,7 +1099,6 @@
                     calegDapilArray = Object.values(cleanCalegMap);
                 }
 
-                // Kalkulasi suara total per partai (Suara Partai Saja + Suara Seluruh Calegnya)
                 partaiDataArray.forEach(pt => {
                     calegDapilArray.forEach(cl => {
                         if (String(cl.partai).trim().toLowerCase() === String(pt.nama).trim().toLowerCase()) {
@@ -1000,10 +1110,8 @@
                 renderDprRiPerDapil(safeId, partaiDataArray, calegDapilArray, totalSuaraSah);
             });
 
-            // Render form konfigurasi berdasarkan Dapil
             renderConfigForm(dapils);
             
-            // Filter sebaran_dapil_dpr agar hanya dapil yang aktif
             const activeSebaran = {};
             if(data.sebaran_dapil_dpr) {
                 Object.keys(data.sebaran_dapil_dpr).forEach(d => {
@@ -1015,7 +1123,6 @@
             renderDapil(activeSebaran, 'dapil-table-dpr');
         }
 
-        // Merender form konfigurasi dinamis berdasarkan jumlah Dapil
         function renderConfigForm(dapils) {
             const container = document.getElementById('dynamic-config-container');
             if (!container) return;
@@ -1060,10 +1167,8 @@
             container.innerHTML = html;
         }
 
-        // Merender spesifik komponen ke dalam ID Dashboard per Dapil
         function renderDprRiPerDapil(safeId, partaiData, calegData, totalSuaraSah) {
             
-            // Render Partai
             partaiData.sort((a, b) => b.suara - a.suara);
             const tableBody = document.querySelector(`#dpr-partai-table-${safeId} tbody`);
             if (tableBody) {
@@ -1081,7 +1186,6 @@
                 });
             }
 
-            // Render Caleg
             calegData.sort((a, b) => b.suara - a.suara);
             const leaderboardBody = document.querySelector(`#dpr-leaderboard-table-${safeId} tbody`);
             const allCalegBody = document.querySelector(`#dpr-all-caleg-table-${safeId} tbody`);
@@ -1092,15 +1196,15 @@
 
             calegData.forEach((c, index) => {
                 const calegPct = totalSuaraSah > 0 ? ((c.suara / totalSuaraSah) * 100).toFixed(2) : "0.00";
-                const suaraDisplay = `<span class="fw-bold fs-6">${calegPct}%</span><br><small class="text-muted">${c.suara.toLocaleString('id-ID')} suara</small>`;
+                const suaraDisplay = `<span class="fw-bold fs-6 text-primary">${calegPct}%</span><br><small class="text-muted">${c.suara.toLocaleString('id-ID')} suara</small>`;
                 const logoHtml = getLogoHtml(c.partai);
 
                 if (allCalegBody) {
                     allCalegBody.innerHTML += `
                         <tr>
-                            <td class="align-middle text-start">${c.nama}</td>
-                            <td class="align-middle text-start">${logoHtml} <span class="badge bg-light text-dark border">${c.partai}</span></td>
-                            <td class="text-end align-middle fw-bold text-primary">${suaraDisplay}</td>
+                            <td class="align-middle text-start"><strong>${c.nama}</strong></td>
+                            <td class="align-middle text-start d-none d-sm-table-cell">${logoHtml} <span class="badge bg-light text-dark border">${c.partai}</span></td>
+                            <td class="text-end align-middle">${suaraDisplay}</td>
                         </tr>
                     `;
                 }
@@ -1109,9 +1213,11 @@
                     leaderboardBody.innerHTML += `
                         <tr>
                             <td class="align-middle text-center"><span class="fw-bold fs-5 text-secondary">#${index + 1}</span></td>
-                            <td class="align-middle text-start fw-bold" style="font-size:1.05rem;">${c.nama}</td>
-                            <td class="align-middle text-start">${logoHtml} <span class="badge bg-light text-dark border">${c.partai}</span></td>
-                            <td class="text-end align-middle fw-bold text-primary">${suaraDisplay}</td>
+                            <td class="align-middle text-start fw-bold" style="font-size:1.05rem;">${c.nama}
+                                <div class="d-block d-sm-none mt-1">${logoHtml} <span class="badge bg-light text-dark border">${c.partai}</span></div>
+                            </td>
+                            <td class="align-middle text-start d-none d-sm-table-cell">${logoHtml} <span class="badge bg-light text-dark border">${c.partai}</span></td>
+                            <td class="text-end align-middle">${suaraDisplay}</td>
                         </tr>
                     `;
                 }
@@ -1137,7 +1243,7 @@
             const tbody = document.querySelector(`#${tableId} tbody`);
             if (!thead || !tbody) return;
 
-            let headerHtml = '<tr><th class="text-start" style="min-width: 200px;">Wilayah (Dapil & Kec)</th>';
+            let headerHtml = '<tr><th class="text-start" style="min-width: 150px;">Wilayah</th>';
             partaiList.forEach(p => headerHtml += `<th>${getLogoHtml(p)}<br><small>${p}</small></th>`);
             headerHtml += '</tr>';
             thead.innerHTML = headerHtml;
@@ -1168,9 +1274,9 @@
                     const pctPartaiDapil = totalSuaraDapil > 0 ? ((suaraPartai / totalSuaraDapil) * 100).toFixed(2) : "0.00";
                     
                     if(suaraPartai === maxSuaraDapil && maxSuaraDapil > 0) {
-                        rowDapil += `<td class="align-middle bg-success bg-opacity-10 text-success"><span class="fw-bolder" style="font-size: 1.25rem;">${pctPartaiDapil}%</span></td>`;
+                        rowDapil += `<td class="align-middle bg-success bg-opacity-10 text-success"><span class="fw-bolder" style="font-size: 1.15rem;">${pctPartaiDapil}%</span></td>`;
                     } else {
-                        rowDapil += `<td class="align-middle text-primary"><span class="fw-bold fs-6">${pctPartaiDapil}%</span></td>`;
+                        rowDapil += `<td class="align-middle text-primary"><span class="fw-bold">${pctPartaiDapil}%</span></td>`;
                     }
                 });
                 rowDapil += '</tr>';
@@ -1185,15 +1291,15 @@
                         maxSuaraKec = Math.max(...partaiList.map(px => (sebaran[dapil][kec][px] || 0)));
                     }
 
-                    let rowKec = `<tr><td class="text-start ps-4"><i class="fas fa-angle-right text-muted me-2"></i> ${kec}</td>`;
+                    let rowKec = `<tr><td class="text-start ps-3"><i class="fas fa-angle-right text-muted me-1"></i> ${kec}</td>`;
                     partaiList.forEach(p => {
                         const suaraPartaiKec = sebaran[dapil][kec][p] || 0;
                         const pctPartaiKec = totalSuaraKec > 0 ? ((suaraPartaiKec / totalSuaraKec) * 100).toFixed(2) : "0.00";
                         
                         if(suaraPartaiKec === maxSuaraKec && maxSuaraKec > 0) {
-                            rowKec += `<td class="align-middle bg-success bg-opacity-10 text-success"><span class="fw-bolder" style="font-size: 1.15rem;">${pctPartaiKec}%</span></td>`;
+                            rowKec += `<td class="align-middle bg-success bg-opacity-10 text-success"><span class="fw-bolder">${pctPartaiKec}%</span></td>`;
                         } else {
-                            rowKec += `<td class="align-middle"><span class="fw-bold fs-6">${pctPartaiKec}%</span></td>`;
+                            rowKec += `<td class="align-middle"><span>${pctPartaiKec}%</span></td>`;
                         }
                     });
                     rowKec += '</tr>';
@@ -1227,7 +1333,6 @@
                 if (runningTextEl) runningTextEl.innerText = runningText;
             }
 
-            // Kumpulkan Data Konfigurasi Dinamis (Per Dapil)
             const dataSettings = [
                 ["JUDUL_DASHBOARD", judulDashboard, "Judul Utama Dashboard"],
                 ["RUNNING_TEXT", runningText, "Teks Bergerak"]
@@ -1429,7 +1534,6 @@
             if (deletedDapils.length > 0) {
                 alert(`Dapil berikut telah terhapus dari referensi Wilayah: ${deletedDapils.join(', ')}.\n\nSistem akan otomatis membersihkan data Caleg yang terkait dan memperbarui tampilan Dashboard & Entri Data agar sinkron.`);
                 
-                // 1. Hapus Caleg yang terkait dengan Dapil yang dihapus
                 const tbodyCaleg = document.getElementById('tbody-caleg-dpr');
                 const calegRows = tbodyCaleg.querySelectorAll('tr');
                 let calegDeleted = false;
@@ -1445,16 +1549,13 @@
                     }
                 });
 
-                // Jika ada Caleg yang dihapus, simpan master data caleg ke server
                 if (calegDeleted) {
                     simpanDataMaster('caleg_dpr');
                     window.masterCalegDprList = window.masterCalegDprList.filter(c => !deletedDapils.includes(String(c[2]).trim()));
                 }
 
-                // 2. Perbarui Entri Form agar dropdown menyesuaikan dapil yang tersedia
                 populateEntriForm();
 
-                // 3. Update Dashboard agar tidak me-render dapil & perhitungan yang telah dihapus
                 if (window.electionData) {
                     processData(window.electionData);
                 }
@@ -1525,7 +1626,6 @@
                 
                 simpanDataMaster(type);
 
-                // Cek apakah hasil edit membuat ada Dapil yang terhapus/berubah nama
                 if (type === 'wilayah') {
                     checkAndCascadeDapilDeletion(oldDapils);
                 }
@@ -1647,12 +1747,11 @@
                 showLoading(false);
                 if(response.status === 'success') {
                     window.masterPartaiList = response.data.partai || [];
-                    window.masterCalegDprList = response.data.caleg_dpr || []; // Menyimpan data caleg untuk filter
+                    window.masterCalegDprList = response.data.caleg_dpr || []; 
 
                     populateMasterTables(response.data);
                     populateEntriForm(); 
                     
-                    // RE-RENDER DASHBOARD JIKA DATA ELECTION SUDAH ADA
                     if(window.electionData) {
                         processData(window.electionData);
                     }
@@ -1831,10 +1930,10 @@
             dapilSelect.onchange = () => {
                 const selectedDapil = dapilSelect.value;
                 const kabs = [...new Set(wilayahData.filter(i => i.dapil === selectedDapil).map(i => i.kab))];
-                kabSelect.innerHTML = '<option value="">-- Pilih Kab/Kota --</option>' + kabs.map(k => `<option value="${k}">${k}</option>`).join('');
-                kecSelect.innerHTML = '<option value="">-- Pilih Kecamatan --</option>';
-                kelSelect.innerHTML = '<option value="">-- Pilih Kel/Desa --</option>';
-                tpsSelect.innerHTML = '<option value="">-- Pilih No TPS --</option>';
+                kabSelect.innerHTML = '<option value="">-- Kab/Kota --</option>' + kabs.map(k => `<option value="${k}">${k}</option>`).join('');
+                kecSelect.innerHTML = '<option value="">-- Kecamatan --</option>';
+                kelSelect.innerHTML = '<option value="">-- Kel/Desa --</option>';
+                tpsSelect.innerHTML = '<option value="">-- No TPS --</option>';
                 renderDynamicForm(selectedDapil); 
             };
 
@@ -1842,9 +1941,9 @@
                 const selectedDapil = dapilSelect.value;
                 const selectedKab = kabSelect.value;
                 const kecs = [...new Set(wilayahData.filter(i => i.dapil === selectedDapil && i.kab === selectedKab).map(i => i.kec))];
-                kecSelect.innerHTML = '<option value="">-- Pilih Kecamatan --</option>' + kecs.map(k => `<option value="${k}">${k}</option>`).join('');
-                kelSelect.innerHTML = '<option value="">-- Pilih Kel/Desa --</option>';
-                tpsSelect.innerHTML = '<option value="">-- Pilih No TPS --</option>';
+                kecSelect.innerHTML = '<option value="">-- Kecamatan --</option>' + kecs.map(k => `<option value="${k}">${k}</option>`).join('');
+                kelSelect.innerHTML = '<option value="">-- Kel/Desa --</option>';
+                tpsSelect.innerHTML = '<option value="">-- No TPS --</option>';
             };
 
             kecSelect.onchange = () => {
@@ -1852,8 +1951,8 @@
                 const selectedKab = kabSelect.value;
                 const selectedKec = kecSelect.value;
                 const kels = [...new Set(wilayahData.filter(i => i.dapil === selectedDapil && i.kab === selectedKab && i.kec === selectedKec).map(i => i.kel))];
-                kelSelect.innerHTML = '<option value="">-- Pilih Kel/Desa --</option>' + kels.map(k => `<option value="${k}">${k}</option>`).join('');
-                tpsSelect.innerHTML = '<option value="">-- Pilih No TPS --</option>';
+                kelSelect.innerHTML = '<option value="">-- Kel/Desa --</option>' + kels.map(k => `<option value="${k}">${k}</option>`).join('');
+                tpsSelect.innerHTML = '<option value="">-- No TPS --</option>';
             };
 
             kelSelect.onchange = () => {
@@ -1862,7 +1961,7 @@
                 const selectedKec = kecSelect.value;
                 const selectedKel = kelSelect.value;
                 const tpss = [...new Set(wilayahData.filter(i => i.dapil === selectedDapil && i.kab === selectedKab && i.kec === selectedKec && i.kel === selectedKel).map(i => i.tps))];
-                tpsSelect.innerHTML = '<option value="">-- Pilih No TPS --</option>' + tpss.map(t => `<option value="${t}">${t}</option>`).join('');
+                tpsSelect.innerHTML = '<option value="">-- No TPS --</option>' + tpss.map(t => `<option value="${t}">${t}</option>`).join('');
             };
 
             if(currentDapil) {
@@ -1969,7 +2068,6 @@
             const warningEl = document.getElementById('warning-dpt');
             if(warningEl) warningEl.classList.add('d-none');
             
-            // Matikan Mode Edit jika sedang aktif
             window.editingLogKey = null;
             const badgeEdit = document.getElementById('badge-edit-mode');
             if(badgeEdit) badgeEdit.classList.add('d-none');
@@ -1987,7 +2085,6 @@
                 return;
             }
 
-            // Ambil URL dengan prioritas dari Local Storage agar lebih stabil
             const webAppUrl = localStorage.getItem('GAS_WEBAPP_URL') || safeGetValue('config-url-webapp');
             if(!webAppUrl || webAppUrl.trim() === '') {
                 alert("URL Web App belum diatur! Silakan isi di tab Konfigurasi agar data entri dapat disimpan.");
@@ -2034,7 +2131,7 @@
                 suara_tidak_sah: tidakSah,
                 timestamp: new Date().toISOString(),
                 edit_mode: window.editingLogKey ? true : false,
-                old_key: window.editingLogKey // Kirim key lama ke GAS untuk mencari baris yang diedit
+                old_key: window.editingLogKey 
             };
 
             fetch(webAppUrl, {
@@ -2058,10 +2155,8 @@
                 if(res.status === 'success') {
                     alert(`BERHASIL! Data Suara untuk TPS ${tps} telah sukses tersimpan ke database (GAS).`);
                     
-                    // Simpan sementara di state lokal agar Tabel Suara langsung update
                     if(!window.localLogSuara) window.localLogSuara = [];
                     
-                    // Hapus data lama dari state lokal jika sedang mode edit
                     if (window.editingLogKey) {
                         window.localLogSuara = window.localLogSuara.filter(item => 
                             !(item.dapil === window.editingLogKey.dapil && 
@@ -2070,7 +2165,6 @@
                               item.kelurahan === window.editingLogKey.kelurahan)
                         );
                     } else {
-                        // Hapus jika ada duplikat entri baru (upsert lokal)
                         window.localLogSuara = window.localLogSuara.filter(item => 
                             !(item.dapil === payloadData.dapil && item.tps === payloadData.tps && item.kecamatan === payloadData.kecamatan && item.kelurahan === payloadData.kelurahan)
                         );
@@ -2080,7 +2174,6 @@
 
                     resetEntriForm();
                     
-                    // Trigger sinkronisasi otomatis agar angka di dashboard langsung bertambah
                     setTimeout(() => {
                         syncDataManual();
                     }, 500);
@@ -2093,69 +2186,6 @@
                 alert("Terjadi Error Jaringan atau CORS saat menyimpan data. Pastikan URL Web App benar dan diatur ke 'Siapa Saja' (Anyone).\n\nDetail: " + err.message);
                 console.error(err);
             });
-        }
-
-        function sortTable(tableId, n, type) {
-            var table, rows, switching, i, x, y, shouldSwitch, dir, switchcount = 0;
-            table = document.getElementById(tableId);
-            switching = true;
-            dir = "asc"; 
-            
-            var headers = table.getElementsByTagName("TH");
-            for (let j = 0; j < headers.length; j++) {
-                let icon = headers[j].querySelector("i.fas");
-                if (icon) icon.className = "fas fa-sort text-muted ms-1";
-            }
-            
-            var currentIcon = headers[n].querySelector("i.fas");
-
-            while (switching) {
-                switching = false;
-                rows = table.getElementsByTagName("TR");
-                
-                for (i = 1; i < (rows.length - 1); i++) {
-                    shouldSwitch = false;
-                    
-                    if(rows[i].cells[0] && rows[i].cells[0].classList.contains("text-muted")) continue;
-                    if(rows[i+1].cells[0] && rows[i+1].cells[0].classList.contains("text-muted")) continue;
-
-                    x = rows[i].getElementsByTagName("TD")[n];
-                    y = rows[i + 1].getElementsByTagName("TD")[n];
-                    
-                    if(!x || !y) continue;
-
-                    let xVal = x.querySelector('select') ? x.querySelector('select').value : x.innerText;
-                    let yVal = y.querySelector('select') ? y.querySelector('select').value : y.innerText;
-
-                    if (type === 'num') {
-                        xVal = parseInt(xVal) || 0;
-                        yVal = parseInt(yVal) || 0;
-                    } else {
-                        xVal = xVal.toLowerCase();
-                        yVal = yVal.toLowerCase();
-                    }
-
-                    if (dir == "asc") {
-                        if (xVal > yVal) { shouldSwitch = true; break; }
-                    } else if (dir == "desc") {
-                        if (xVal < yVal) { shouldSwitch = true; break; }
-                    }
-                }
-                if (shouldSwitch) {
-                    rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
-                    switching = true;
-                    switchcount ++;      
-                } else {
-                    if (switchcount == 0 && dir == "asc") {
-                        dir = "desc";
-                        switching = true;
-                    }
-                }
-            }
-            
-            if(currentIcon) {
-                currentIcon.className = dir === "asc" ? "fas fa-sort-up text-white ms-1" : "fas fa-sort-down text-white ms-1";
-            }
         }
 
         // =========================================================
@@ -2184,7 +2214,6 @@
                     window.logSuaraData = response.data;
                     renderTabelSuara();
                 } else {
-                    // Fallback menggunakan state lokal bila endpoint GAS belum menyediakan getLogSuara
                     if(window.localLogSuara && window.localLogSuara.length > 0) {
                         window.logSuaraData = window.localLogSuara;
                         renderTabelSuara();
@@ -2211,7 +2240,6 @@
                 return;
             }
 
-            // Urutkan berdasarkan Dapil lalu TPS
             window.logSuaraData.sort((a, b) => {
                 const dapilCmp = (a.dapil || '').localeCompare(b.dapil || '');
                 if (dapilCmp !== 0) return dapilCmp;
@@ -2222,7 +2250,6 @@
             window.logSuaraData.forEach((row, idx) => {
                 const rowId = 'log-' + idx;
                 
-                // Susun hierarki Partai & Caleg di dalam Detail Expand
                 let detailHtml = `<div class="p-2 bg-white rounded border shadow-sm" style="max-height: 250px; overflow-y: auto;">`;
                 
                 if (window.masterPartaiList && window.masterPartaiList.length > 0) {
@@ -2235,9 +2262,8 @@
                             calegPartaiIni = window.masterCalegDprList.filter(mc => String(mc[3]).trim() === pNama && String(mc[2]).trim() === row.dapil);
                         }
 
-                        // Tampilkan hanya jika ada partai/caleg yang memiliki suara (atau jika mau semuanya tampil, hapus kondisi ini)
                         const hasCalegVotes = calegPartaiIni.some(c => (row.suara_caleg_dpr && row.suara_caleg_dpr[c[1]]) > 0);
-                        if(suaraP > 0 || hasCalegVotes || true) { // Default tampilkan semua yg ada di form form
+                        if(suaraP > 0 || hasCalegVotes || true) { 
                             detailHtml += `<div class="fw-bold text-white bg-primary px-2 py-1 mt-2 mb-1 rounded" style="font-size: 0.9rem;">${pNama} <span class="float-end">Suara Partai: ${suaraP}</span></div>`;
                             
                             calegPartaiIni.sort((a,b) => a[0] - b[0]).forEach(c => {
@@ -2266,7 +2292,7 @@
                     <td class="fw-bold text-primary">TPS ${row.tps || '-'}</td>
                     <td>
                         <button class="btn btn-sm btn-outline-info fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#detail-${rowId}">
-                            <i class="fas fa-eye me-1"></i> Lihat Urutan
+                            <i class="fas fa-eye me-1"></i> Detail
                         </button>
                     </td>
                     <td class="aksi-col text-nowrap">
@@ -2275,7 +2301,6 @@
                     </td>
                 `;
                 
-                // Format Tanggal
                 let tgl = '-';
                 if(row.timestamp) {
                     const d = new Date(row.timestamp);
@@ -2287,8 +2312,8 @@
                 trDetail.style.backgroundColor = "#f8fafc";
                 trDetail.id = `detail-${rowId}`;
                 trDetail.innerHTML = `
-                    <td colspan="8" class="text-start p-3 border-bottom shadow-inner">
-                        <div class="row align-items-start">
+                    <td colspan="8" class="text-start p-md-3 p-2 border-bottom shadow-inner">
+                        <div class="row align-items-start g-3">
                             <div class="col-md-4">
                                 <div class="bg-white p-3 rounded border shadow-sm h-100">
                                     <h6 class="fw-bold text-secondary border-bottom pb-2"><i class="fas fa-info-circle me-1"></i> Ringkasan TPS</h6>
@@ -2357,7 +2382,6 @@
             })
             .catch(err => {
                 showLoading(false);
-                // Fallback delete lokal jika server gagal (CORS/endpoint blm siap)
                 if(window.localLogSuara) {
                     dataArray.forEach(delItem => {
                         window.localLogSuara = window.localLogSuara.filter(item => !(item.dapil === delItem.dapil && item.tps === delItem.tps && item.kecamatan === delItem.kecamatan && item.kelurahan === delItem.kelurahan));
@@ -2371,7 +2395,6 @@
         function editLogSuara(encodedData) {
             const row = JSON.parse(decodeURIComponent(encodedData));
             
-            // 1. Simpan Kunci Asli untuk Mode Edit
             window.editingLogKey = {
                 dapil: row.dapil,
                 kabupaten: row.kabupaten,
@@ -2380,18 +2403,15 @@
                 tps: row.tps
             };
 
-            // Tampilkan Badge Edit Mode
             const badgeEdit = document.getElementById('badge-edit-mode');
             if(badgeEdit) badgeEdit.classList.remove('d-none');
 
-            // 2. Pindah ke Tab Entri Data
             const entriTabBtn = document.getElementById('entri-data-tab');
             if(entriTabBtn) {
                 const tab = new bootstrap.Tab(entriTabBtn);
                 tab.show();
             }
 
-            // 3. Set dropdown hierarchy (delay berjenjang agar trigger jalan)
             const dapilSelect = document.getElementById('select-dapil');
             if(dapilSelect) {
                 dapilSelect.value = row.dapil;
@@ -2422,7 +2442,6 @@
                                 tpsSelect.dispatchEvent(new Event('change'));
                             }
 
-                            // 4. Set nilai Input Suara
                             document.getElementById('input-dpt').value = row.dpt || 0;
                             document.getElementById('input-suara-tidak-sah').value = row.suara_tidak_sah || 0;
                             
@@ -2444,6 +2463,69 @@
                     }, 50);
                 }, 50);
             }, 50);
+        }
+
+        function sortTable(tableId, n, type) {
+            var table, rows, switching, i, x, y, shouldSwitch, dir, switchcount = 0;
+            table = document.getElementById(tableId);
+            switching = true;
+            dir = "asc"; 
+            
+            var headers = table.getElementsByTagName("TH");
+            for (let j = 0; j < headers.length; j++) {
+                let icon = headers[j].querySelector("i.fas");
+                if (icon) icon.className = "fas fa-sort text-muted ms-1";
+            }
+            
+            var currentIcon = headers[n].querySelector("i.fas");
+
+            while (switching) {
+                switching = false;
+                rows = table.getElementsByTagName("TR");
+                
+                for (i = 1; i < (rows.length - 1); i++) {
+                    shouldSwitch = false;
+                    
+                    if(rows[i].cells[0] && rows[i].cells[0].classList.contains("text-muted")) continue;
+                    if(rows[i+1].cells[0] && rows[i+1].cells[0].classList.contains("text-muted")) continue;
+
+                    x = rows[i].getElementsByTagName("TD")[n];
+                    y = rows[i + 1].getElementsByTagName("TD")[n];
+                    
+                    if(!x || !y) continue;
+
+                    let xVal = x.querySelector('select') ? x.querySelector('select').value : x.innerText;
+                    let yVal = y.querySelector('select') ? y.querySelector('select').value : y.innerText;
+
+                    if (type === 'num') {
+                        xVal = parseInt(xVal) || 0;
+                        yVal = parseInt(yVal) || 0;
+                    } else {
+                        xVal = xVal.toLowerCase();
+                        yVal = yVal.toLowerCase();
+                    }
+
+                    if (dir == "asc") {
+                        if (xVal > yVal) { shouldSwitch = true; break; }
+                    } else if (dir == "desc") {
+                        if (xVal < yVal) { shouldSwitch = true; break; }
+                    }
+                }
+                if (shouldSwitch) {
+                    rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+                    switching = true;
+                    switchcount ++;      
+                } else {
+                    if (switchcount == 0 && dir == "asc") {
+                        dir = "desc";
+                        switching = true;
+                    }
+                }
+            }
+            
+            if(currentIcon) {
+                currentIcon.className = dir === "asc" ? "fas fa-sort-up text-white ms-1" : "fas fa-sort-down text-white ms-1";
+            }
         }
 
         window.addEventListener('load', function() {
@@ -2471,7 +2553,6 @@
             }
             
             setWaktuUpdate();
-            loadMasterData(); 
         });
     </script>
 </body>
